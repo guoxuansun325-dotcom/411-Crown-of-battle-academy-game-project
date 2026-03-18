@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>术校冠冕 · 战斗系统模拟机 v14 稳定声画版</title>
+  <title>术校冠冕｜同步亮招策略对决</title>
   <style>
     :root{
       --bg:#f7f7f8;
@@ -29,6 +29,7 @@
     .sub{color:var(--muted);font-size:11px;margin-top:2px;line-height:1.4}
     .badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
     .badge{font-size:11px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);padding:4px 8px;border-radius:999px}
+    .entry-tip{margin-top:8px;font-size:12px;line-height:1.5;color:#334155;max-width:760px}
     .state-badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
     .state-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid var(--line);background:#fff;color:#334155}
     .state-badge.combo{border-color:#d97706;background:#fff7ed;color:#9a3412}
@@ -273,14 +274,15 @@
 <div class="app">
   <section class="panel topbar">
     <div>
-      <div class="title">术校冠冕 · 战斗系统模拟机 v14 稳定声画版</div>
-      <div class="sub"><span id="stageTitleText">第 1 关：入门试手</span>｜<span id="stageTeachText">先感受资源与一阶攻防，不急着背完全部规则。</span></div>
+      <div class="title">术校冠冕｜同步亮招策略对决</div>
+      <div class="sub">这不是普通卡牌对战。你要在同步亮招中读对手、反制对手，并在六场教学战里掌握 411 的核心博弈。</div>
+      <div class="entry-tip">建议先从第 1 关开始，打完前 3 关后再决定是否继续挑战高阶对局。</div>
     </div>
     <div class="badges">
-      <span class="badge">只用原始招式名</span>
-      <span class="badge">规则基准 battle_411.py</span>
-      <span class="badge">首回合禁夺气</span>
-      <span class="badge">6 战闯关教学</span>
+      <span class="badge">同步亮招博弈</span>
+      <span class="badge">6 战教学闯关</span>
+      <span class="badge">完整 411 骨架</span>
+      <span class="badge">欢迎测试反馈</span>
     </div>
   </section>
 
@@ -322,7 +324,7 @@
           <div class="desc" id="revealEnemyDesc">等待揭晓</div>
         </div>
       </div>
-      <div class="verdict" id="verdictBox"><div class="v-title" id="verdictTitle">等待亮招</div><div class="v-desc" id="verdictDesc">先选动作。中央这里以后只说判决，不让你再翻日志找答案。</div></div>
+      <div class="verdict" id="verdictBox"><div class="v-title" id="verdictTitle">等待亮招</div><div class="v-desc" id="verdictDesc">先选一个动作。亮招后，这里会直接告诉你这一手为什么成立。</div></div>
       <div class="intent"><b id="enemyIntent">蓄势 / 试探</b><span id="enemyIntentDesc">前期会在运气、夺气与低阶出招之间切换；到 2 气开始加入防御与反制。</span></div>
     </section>
 
@@ -362,9 +364,9 @@
             <div class="campaign-goal" id="campaignGoal">目标：学会运气、嘎波、瓦斯的第一层博弈。</div>
           </div>
           <button class="btn secondary" id="restartStageBtn">重开本关</button>
-          <button class="btn secondary" id="chartBtn">招式阶段图谱</button>
-          <button class="btn secondary" id="guideBtn">闯关说明</button>
-          <button class="btn secondary" id="ruleBtn">查看动作关系</button>
+          <button class="btn secondary" id="chartBtn">招式图谱</button>
+          <button class="btn secondary" id="guideBtn">教学说明</button>
+          <button class="btn secondary" id="ruleBtn">招式关系</button>
         </div>
       </div>
 <div id="stageLessonBox" style="display:none"></div><div id="stageHintBox" style="display:none"></div>
@@ -393,7 +395,7 @@
     <section class="side">
       <section class="panel result" id="resultBanner">
         <div class="big" id="resultBig">胜利</div>
-        <div class="small" id="resultSmall">先看这套完整骨架是不是好玩。</div>
+        <div class="small" id="resultSmall">继续推进闯关，看看你能否把读招、反制与起势连成自己的节奏。</div>
         <div style="margin-top:10px"><button class="btn primary" id="resultActionBtn">下一关</button></div>
       </section>
       <section class="panel situation" id="situationPanel">
@@ -417,7 +419,7 @@
   <div class="modal" id="guideModal">
     <div class="modal-card">
       <div class="modal-head">
-        <div class="modal-title">闯关说明</div>
+        <div class="modal-title">教学说明</div>
         <button class="btn secondary small-btn" id="closeGuideModalBtn">关闭</button>
       </div>
       <div class="modal-body" style="font-size:12px;color:#475569;line-height:1.7">
@@ -444,7 +446,7 @@
   <div class="modal" id="chartModal">
     <div class="modal-card chart-card">
       <div class="modal-head">
-        <div class="modal-title">招式阶段图谱</div>
+        <div class="modal-title">招式图谱</div>
         <button class="btn secondary small-btn" id="closeChartModalBtn">关闭</button>
       </div>
       <div class="modal-body chart-body">
