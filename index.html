@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>术校冠冕 · 战斗系统模拟机 v14 稳定声画版</title>
+  <style>
+    :root{
+      --bg:#f7f7f8;
+      --panel:#ffffff;
+      --panel-2:#f3f4f6;
+      --line:#e5e7eb;
+      --text:#111827;
+      --muted:#6b7280;
+      --accent:#10a37f;
+      --accent-2:#0e8f70;
+      --bad:#dc2626;
+      --warn:#d97706;
+      --shadow:0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(15,23,42,.04);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+    .app{height:100vh;display:grid;grid-template-rows:auto auto 1fr;gap:8px;padding:8px;max-width:1400px;margin:0 auto}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .topbar{padding:8px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .title{font-size:18px;font-weight:800;margin:0}
+    .sub{color:var(--muted);font-size:11px;margin-top:2px;line-height:1.4}
+    .badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .badge{font-size:11px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);padding:4px 8px;border-radius:999px}
+    .state-badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .state-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid var(--line);background:#fff;color:#334155}
+    .state-badge.combo{border-color:#d97706;background:#fff7ed;color:#9a3412}
+    .state-badge.chain{border-color:#10a37f;background:#ecfdf5;color:#066b54}
+    .state-badge.finisher{border-color:#7c3aed;background:#f5f3ff;color:#5b21b6}
+    .state-badge.empty{background:var(--panel-2);color:var(--muted)}
+    .stance-indicator{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:#fff}
+    .stance-indicator .lamp{width:10px;height:10px;border-radius:999px;background:#cbd5e1;box-shadow:0 0 0 2px rgba(203,213,225,.25)}
+    .stance-indicator.on{border-color:#f59e0b;background:#fff7ed}
+    .stance-indicator.on .lamp{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.18),0 0 12px rgba(245,158,11,.45)}
+    .stance-indicator .lamp-text{font-size:11px;font-weight:700;color:#64748b}
+    .stance-indicator.on .lamp-text{color:#9a3412}
+
+    .stance-wrap{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .glyph-stack{display:grid;grid-template-rows:auto auto;gap:8px;align-items:start}
+    .combo-corner{width:96px;padding:8px 8px;border:1px dashed #f59e0b;background:#fff7ed;border-radius:12px;font-size:10px;line-height:1.35;color:#9a3412;text-align:left}
+
+    .combo-corner.starter-active{border-color:#f59e0b;background:#fff7ed;box-shadow:0 0 0 2px rgba(245,158,11,.16) inset}
+    .combo-corner.chain-active{border-color:#10b981;background:#ecfdf5;color:#065f46;box-shadow:0 0 0 2px rgba(16,185,129,.16) inset}
+    .combo-corner.finisher-active{border-color:#8b5cf6;background:#f5f3ff;color:#5b21b6;box-shadow:0 0 0 2px rgba(139,92,246,.16) inset}
+    .liu-quick.ready{padding:6px 8px;border-radius:12px;background:#fffbeb;border:1px solid #fcd34d}
+
+    .liu-quick{display:flex;gap:8px;align-items:center;justify-content:flex-end;min-height:44px;flex-wrap:wrap}
+    .liu-quick.ready{padding:6px 8px;border-radius:12px;background:#fffbeb;border:1px solid #fcd34d}
+
+    .mini-move-btn{border:1px solid #f59e0b;background:linear-gradient(180deg,#fff7ed,#ffedd5);border-radius:12px;padding:11px 16px;font-size:15px;font-weight:900;cursor:pointer;color:#9a3412;min-width:108px;box-shadow:0 1px 0 rgba(255,255,255,.7) inset}
+    .mini-move-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 2px 10px rgba(245,158,11,.15)}
+    .mini-move-btn.selected{border-color:#d97706;box-shadow:0 0 0 2px rgba(245,158,11,.18) inset, 0 0 0 1px rgba(245,158,11,.25)}
+    .mini-move-btn.combo{border-color:#10b981;background:linear-gradient(180deg,#ecfdf5,#d1fae5);color:#065f46}
+    .mini-move-btn.combo.selected{border-color:#059669;box-shadow:0 0 0 2px rgba(16,185,129,.18) inset, 0 0 0 1px rgba(16,185,129,.25)}
+    .mini-move-btn.finisher{border-color:#8b5cf6;background:linear-gradient(180deg,#f5f3ff,#ede9fe);color:#5b21b6}
+    .mini-move-btn.finisher.selected{border-color:#7c3aed;box-shadow:0 0 0 2px rgba(139,92,246,.18) inset, 0 0 0 1px rgba(139,92,246,.25)}
+    .mini-move-btn:disabled{opacity:.4;cursor:not-allowed}
+    .mini-ghost{font-size:11px;color:#64748b;padding:6px 8px;border-radius:10px;background:#f8fafc;border:1px solid #e5e7eb}
+
+
+
+    .status-row{display:grid;grid-template-columns:1fr 360px 1fr;gap:8px;min-height:124px}
+
+    .fighter{padding:10px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+
+    .fighter .name{font-weight:800;font-size:15px}
+    .fighter .role{font-size:12px;color:var(--muted);margin-top:2px}
+    .stat{margin-top:7px}
+    .stat-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+    .bar{height:10px;background:#eef2f7;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+    .fill{height:100%;transition:width .2s ease}
+    .hp{background:linear-gradient(90deg,#ef4444,#fb7185)}
+    .qi{background:linear-gradient(90deg,#38bdf8,#2563eb)}
+    .mini{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6}
+    .glyph{width:74px;height:74px;border-radius:18px;display:grid;place-items:center;background:#f3f4f6;border:1px solid var(--line);color:#0f172a;font-weight:900;font-size:18px}
+
+    .reveal{padding:12px;display:grid;grid-template-rows:auto 1fr auto;gap:10px}
+    .round{text-align:center;color:var(--muted);font-size:12px}
+    .vs-wrap{display:grid;grid-template-columns:1fr 56px 1fr;gap:10px;align-items:center}
+    .verdict{border:1px solid var(--line);background:#fafafa;border-radius:12px;padding:10px 12px;text-align:center}
+    .verdict .v-title{font-size:14px;font-weight:800;color:#111827}
+    .verdict .v-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-top:4px}
+    .slot{min-height:124px;border:1px dashed #d1d5db;border-radius:14px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:#fafafa;padding:10px}
+    .slot .who{font-size:12px;color:var(--muted);margin-bottom:8px}
+    .slot .move{font-size:28px;font-weight:900;letter-spacing:1px}
+    .slot .desc{font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px}
+
+    .slot.focus-reveal{background:linear-gradient(180deg,#eff6ff,#dbeafe);border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,.12) inset}
+    .slot.scatter-reveal{background:linear-gradient(180deg,#ecfdf5,#d1fae5);border-color:#34d399;box-shadow:0 0 0 2px rgba(52,211,153,.12) inset}
+    .slot.guard-reveal{background:linear-gradient(180deg,#fff7ed,#ffedd5);border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.12) inset}
+    .slot.reflect-reveal{background:linear-gradient(180deg,#f5f3ff,#ede9fe);border-color:#8b5cf6;box-shadow:0 0 0 2px rgba(139,92,246,.12) inset}
+    .slot.utility-reveal{background:linear-gradient(180deg,#f8fafc,#eef2f7);border-color:#94a3b8;box-shadow:0 0 0 2px rgba(148,163,184,.10) inset}
+    .vs{text-align:center;font-weight:900;font-size:28px;color:var(--warn)}
+    .intent{padding:8px 10px;border-top:1px solid var(--line);background:#fafafa;border-radius:12px;font-size:12px}
+    .intent b{display:block;color:#111827;margin-bottom:4px}
+
+    .main{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:8px;min-height:0}
+    .moves{padding:8px;display:grid;grid-template-rows:auto 1fr;gap:6px;align-content:start;min-height:0;overflow:hidden}
+    .action-toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 8px;border:1px solid var(--line);border-radius:14px;background:#fff;position:sticky;top:0;z-index:5}
+    .action-toolbar .toolbar-left,.action-toolbar .toolbar-right{display:flex;gap:10px;flex-wrap:wrap}
+    .section-title{font-size:12px;color:var(--muted)}
+    .compact-hints{display:none}
+    .compact-hint{display:flex;gap:6px;align-items:flex-start;padding:6px 8px;border:1px solid var(--line);border-radius:12px;background:#fafafa;font-size:10px;color:#475569;line-height:1.35}
+    .compact-hint b{white-space:nowrap;color:#111827}
+
+    .move-scroll{border:1px solid var(--line);border-radius:14px;padding:10px;background:#fafafa;min-height:0;overflow:auto;max-height:40vh}
+    .move-scroll::-webkit-scrollbar{width:10px;height:10px}
+    .move-scroll::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:999px;border:2px solid #fafafa}
+    .move-scroll::-webkit-scrollbar-track{background:transparent}
+    .move-sections{display:grid;gap:10px;align-content:start}
+    .move-section{border:1px solid var(--line);border-radius:14px;background:#fff;padding:8px 10px}
+    .move-section.recommended{border-color:#86efac;background:#f0fdf4;box-shadow:0 0 0 1px rgba(16,163,127,.08) inset}
+    .move-section .group-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #eef2f7}
+    .group-hint{font-size:11px;color:#0f766e;background:#ecfeff;border:1px solid #bae6fd;padding:2px 8px;border-radius:999px}
+    .group-title{font-size:12px;color:var(--muted);font-weight:700}
+    .move-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;overflow:visible;padding-bottom:0;scroll-snap-type:none}
+    .move-grid::-webkit-scrollbar{height:8px}
+    .move-grid::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:999px}
+    .move-grid::-webkit-scrollbar-track{background:transparent}
+    .move-btn{width:100%;border:1px solid #d1d5db;border-radius:14px;background:#fff;padding:8px 8px 9px;text-align:left;cursor:pointer;transition:border-color .15s ease, transform .15s ease, box-shadow .15s ease;min-height:74px;position:relative;scroll-snap-align:auto;display:flex;flex-direction:column;justify-content:flex-start}
+    .move-btn:hover:not(:disabled){border-color:#b6c2d0;transform:translateY(-1px)}
+    .move-btn.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(16,163,127,.12)}
+    .move-btn:disabled{opacity:.46;cursor:not-allowed}
+    .cost{position:absolute;top:8px;right:10px;font-size:11px;color:var(--muted)}
+    .move-name{font-size:13px;font-weight:900;margin-bottom:3px;line-height:1.05;letter-spacing:.2px}
+    .chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+    .chip{font-size:8px;color:#475569;padding:1px 5px;border-radius:999px;background:#f3f4f6;border:1px solid #e5e7eb}
+    .move-desc{font-size:9px;color:var(--muted);line-height:1.25;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+
+    .attack-rows::-webkit-scrollbar,.defense-grid::-webkit-scrollbar,.log::-webkit-scrollbar{width:10px}
+    .attack-rows::-webkit-scrollbar-thumb,.defense-grid::-webkit-scrollbar-thumb,.log::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+
+    .meta{display:none}
+    .meta-box{padding:8px 10px;border:1px dashed #d1d5db;border-radius:12px;background:#fafafa;color:var(--muted);font-size:11px;line-height:1.45}
+
+    .side{display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:8px;min-height:0}
+    .result{padding:6px 8px;display:none}
+    .result.show{display:block}
+    .result .big{font-size:18px;font-weight:900;margin-bottom:2px}
+    .result .small{font-size:10px;color:var(--muted)}
+    .log{padding:6px;overflow:auto;min-height:0;max-height:16vh}
+    .entry{padding:5px 7px;background:#fafafa;border:1px solid var(--line);border-radius:10px;margin-bottom:4px;font-size:10px;line-height:1.25}
+    .entry.good{border-color:#b7ead8;background:#f0fdf7}
+    .entry.bad{border-color:#fecaca;background:#fef2f2}
+    .entry.warn{border-color:#fde68a;background:#fffbeb}
+
+    .situation{padding:8px;display:grid;gap:8px}
+    .situation-grid{display:grid;grid-template-columns:1fr;gap:8px}
+    .s-box{border:1px solid var(--line);border-radius:12px;background:#fafafa;padding:8px}
+    .s-title{font-size:11px;font-weight:800;color:#334155;margin-bottom:6px}
+    .s-list{display:grid;gap:6px}
+    .s-item{font-size:11px;line-height:1.45;color:#475569;padding:6px 8px;border-radius:10px;background:#fff;border:1px solid #e5e7eb}
+    .s-item strong{color:#111827}
+    .s-item.em{border-color:#d1fae5;background:#f0fdf7}
+    .s-item.warn{border-color:#fde68a;background:#fffbeb}
+    .tips{padding:12px;font-size:12px;color:var(--muted);line-height:1.7}
+
+    .footer{padding:12px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .footer-left,.footer-right{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn.primary:hover:not(:disabled){background:var(--accent-2)}
+    .btn.secondary{background:#fff;color:#111827;border:1px solid #d1d5db}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+
+    @media (max-width: 1180px){
+      body{overflow:auto}
+      .app{height:auto;min-height:100vh}
+      .status-row{grid-template-columns:1fr}
+      .main{grid-template-columns:1fr}
+      .compact-hints{grid-template-columns:1fr}
+      .action-layout{grid-template-columns:1fr}
+      .attack-grid,.defense-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .attack-rows,.defense-grid{max-height:none}
+      .meta{grid-template-columns:1fr}
+      .footer{flex-direction:column;align-items:stretch}
+    }
+    @media (max-width: 760px){.move-grid{grid-template-columns:repeat(2,1fr)}}
+  
+    .modal{position:fixed;inset:0;background:rgba(17,24,39,.28);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
+    .modal.show{display:flex}
+    .modal-card{width:min(760px, 96vw);max-height:84vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 50px rgba(15,23,42,.18)}
+    .chart-card{width:min(860px, 96vw)}
+    .modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
+    .modal-title{font-size:18px;font-weight:800}
+    .modal-body{padding:16px}
+    .small-btn{padding:8px 12px;font-size:13px}
+    .stage-select-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+    .stage-btn{border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px;text-align:left;cursor:pointer}
+    .stage-btn:hover{border-color:#c7d2fe;background:#fafafa}
+    .chart-body{display:grid;gap:12px}
+    .chart-block{border:1px solid var(--line);border-radius:14px;background:#fafafa;padding:12px;line-height:1.65}
+    .muted2{color:var(--muted);font-size:13px}
+
+  
+    /* --- A5 layout refinement: split attack / defense areas and compact full-page fit --- */
+    .app{gap:10px;padding:10px;max-width:1320px}
+    .topbar{padding:10px 12px}
+    .title{font-size:18px}
+    .sub{font-size:11px;line-height:1.45}
+    .badge{font-size:11px;padding:5px 8px}
+    .status-row{grid-template-columns:1fr 400px 1fr;gap:10px;min-height:126px}
+    .fighter{padding:12px;gap:10px}
+    .fighter .name{font-size:15px}
+    .stat{margin-top:8px}
+    .glyph{width:66px;height:66px;border-radius:16px;font-size:17px}
+    .reveal{padding:10px;gap:8px}
+    .slot{min-height:96px;padding:8px}
+    .slot .move{font-size:24px}
+    .slot .desc{font-size:11px;line-height:1.4}
+    .intent{padding:7px 9px;font-size:11px}
+    .main{grid-template-columns:1.2fr .8fr;gap:10px}
+    .moves{padding:10px;display:grid;grid-template-rows:auto 1fr auto;gap:8px;min-height:0}
+    .action-toolbar{padding:8px 10px;gap:8px}
+    .action-toolbar .toolbar-left,.action-toolbar .toolbar-right{gap:8px}
+    .campaign-head{display:flex;flex-direction:column;gap:1px;max-width:180px}
+    .campaign-progress{font-size:10px;color:var(--muted)}
+    .campaign-goal{font-size:10px;color:#374151;max-width:180px;line-height:1.2}
+    .btn{padding:8px 11px;font-size:12px}
+    .action-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.8fr);gap:8px;min-height:0;overflow:hidden}
+    .action-panel{border:1px solid var(--line);border-radius:14px;background:#fafafa;padding:8px;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+    .action-panel-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+    .action-panel-title{font-size:12px;color:var(--muted);font-weight:700}
+    .action-panel-note{font-size:10px;color:#475569;line-height:1.35;background:#fff;border:1px dashed #d1d5db;border-radius:10px;padding:5px 7px;margin-bottom:6px}
+    .attack-rows{display:grid;gap:6px;overflow:auto;max-height:28vh;padding-right:4px}
+    .attack-row{border:1px solid var(--line);border-radius:12px;background:#fff;padding:6px}
+    .attack-row-head{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+    .attack-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+    .defense-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;overflow:auto;max-height:28vh;padding-right:4px}
+    .move-btn{min-height:68px;padding:6px 8px 8px}
+    .move-name{font-size:14px;margin-bottom:4px}
+    .chips{margin-bottom:4px;gap:3px}
+    .chip{font-size:8px;padding:1px 4px}
+    .move-desc{font-size:9px;-webkit-line-clamp:2}
+    .cost{top:5px;right:6px;font-size:9px}
+    .defense-chain{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
+    .chain-box{background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:10px;line-height:1.4;color:#475569}
+    .chain-box strong{color:#111827}
+    .chain-flow{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px;padding:5px 7px;background:#fff;border:1px solid var(--line);border-radius:10px}
+    .flow-node{font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px;background:#f3f4f6;border:1px solid #e5e7eb}
+    .flow-arrow{font-size:12px;color:var(--muted)}
+    .meta{grid-template-columns:1fr;gap:8px}
+    .meta-box{padding:8px 10px;font-size:11px;line-height:1.45}
+    .side{grid-template-rows:auto 1fr auto;gap:10px}
+    .result{padding:12px}
+    .result .big{font-size:22px}
+    .result .small{font-size:12px}
+    .log{padding:10px}
+    .entry{padding:8px 10px;margin-bottom:6px;font-size:12px;line-height:1.5}
+    .tips{padding:10px;font-size:11px;line-height:1.6}
+    .modal-card{max-height:84vh;overflow:auto}
+    @media (max-width: 1180px){
+      .status-row{grid-template-columns:1fr;min-height:auto}
+      .main{grid-template-columns:1fr}
+      .compact-hints{grid-template-columns:1fr}
+      .action-layout{grid-template-columns:1fr}
+      .attack-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .defense-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      body{overflow:auto}
+      .app{height:auto;min-height:100vh}
+    }
+
+  </style>
+</head>
+<body>
+<div class="app">
+  <section class="panel topbar">
+    <div>
+      <div class="title">术校冠冕 · 战斗系统模拟机 v14 稳定声画版</div>
+      <div class="sub"><span id="stageTitleText">第 1 关：入门试手</span>｜<span id="stageTeachText">先感受资源与一阶攻防，不急着背完全部规则。</span></div>
+    </div>
+    <div class="badges">
+      <span class="badge">只用原始招式名</span>
+      <span class="badge">规则基准 battle_411.py</span>
+      <span class="badge">首回合禁夺气</span>
+      <span class="badge">6 战闯关教学</span>
+    </div>
+  </section>
+
+  <section class="status-row">
+    <section class="panel fighter" id="playerCard">
+      <div>
+        <div class="name">主角 · 试炼生</div>
+        <div class="role">你方</div>
+        <div class="stat">
+          <div class="stat-top"><span>血量</span><b id="playerHpText">100 / 100</b></div>
+          <div class="bar"><div class="fill hp" id="playerHpBar" style="width:100%"></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-top"><span>气</span><b id="playerQiText">0</b></div>
+          <div class="bar"><div class="fill qi" id="playerQiBar" style="width:0%"></div></div>
+        </div>
+        <div class="mini">已选动作：<b id="playerSelected">—</b></div>
+        <div class="mini">连招状态：<span class="state-badges" id="playerComboBadges"><span class="state-badge empty">—</span></span></div>
+        <div class="mini stance-wrap"><span>中防指示灯：<span class="stance-indicator" id="playerStanceLamp"><span class="lamp"></span><span class="lamp-text">未起势</span></span></span><span class="liu-quick" id="liuQuick"></span></div>
+      </div>
+      <div class="glyph-stack">
+        <div class="glyph">我方</div>
+        <div class="combo-corner" id="comboCorner">中防起势后：六脉 / 六散 → 降龙 / 降分 ×3 → 末日</div>
+      </div>
+    </section>
+
+    <section class="panel reveal">
+      <div class="round" id="roundText">第 1 回合</div>
+      <div class="vs-wrap">
+        <div class="slot">
+          <div class="who">你方亮招</div>
+          <div class="move" id="revealPlayer">？</div>
+          <div class="desc" id="revealPlayerDesc">先选一个动作</div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="slot">
+          <div class="who">敌方亮招</div>
+          <div class="move" id="revealEnemy">？</div>
+          <div class="desc" id="revealEnemyDesc">等待揭晓</div>
+        </div>
+      </div>
+      <div class="verdict" id="verdictBox"><div class="v-title" id="verdictTitle">等待亮招</div><div class="v-desc" id="verdictDesc">先选动作。中央这里以后只说判决，不让你再翻日志找答案。</div></div>
+      <div class="intent"><b id="enemyIntent">蓄势 / 试探</b><span id="enemyIntentDesc">前期会在运气、夺气与低阶出招之间切换；到 2 气开始加入防御与反制。</span></div>
+    </section>
+
+    <section class="panel fighter" id="enemyCard">
+      <div>
+        <div class="name" id="enemyNameLabel">见习对手</div>
+        <div class="role" id="enemyRoleLabel">敌方 · 第 1 关</div>
+        <div class="stat">
+          <div class="stat-top"><span>血量</span><b id="enemyHpText">100 / 100</b></div>
+          <div class="bar"><div class="fill hp" id="enemyHpBar" style="width:100%"></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-top"><span>气</span><b id="enemyQiText">0</b></div>
+          <div class="bar"><div class="fill qi" id="enemyQiBar" style="width:0%"></div></div>
+        </div>
+        <div class="mini">上回合动作：<b id="enemyLast">—</b></div>
+        <div class="mini">敌方风格：<b id="enemyStyle">随机敌方风格</b></div>
+        <div class="mini">敌方连招：<span class="state-badges" id="enemyComboBadges"><span class="state-badge empty">—</span></span></div>
+        <div class="mini">中防指示灯：<span class="stance-indicator" id="enemyStanceLamp"><span class="lamp"></span><span class="lamp-text">未起势</span></span></div>
+      </div>
+      <div class="glyph">敌方</div>
+    </section>
+  </section>
+
+  <section class="main">
+    <section class="panel moves">
+      <div class="section-title">动作区（进攻 / 防守分区）</div>
+      <div class="action-toolbar">
+        <div class="toolbar-left">
+          <button class="btn primary" id="confirmBtn" disabled>确认亮招</button>
+          <button class="btn secondary" id="resetBtn">重开原型</button>
+          <button class="btn secondary" id="stageSelectBtn">选关</button>
+        </div>
+        <div class="toolbar-right">
+          <div class="campaign-head">
+            <div class="campaign-progress" id="campaignProgress">第 1 / 6 关</div>
+            <div class="campaign-goal" id="campaignGoal">目标：学会运气、嘎波、瓦斯的第一层博弈。</div>
+          </div>
+          <button class="btn secondary" id="restartStageBtn">重开本关</button>
+          <button class="btn secondary" id="chartBtn">招式阶段图谱</button>
+          <button class="btn secondary" id="guideBtn">闯关说明</button>
+          <button class="btn secondary" id="ruleBtn">查看动作关系</button>
+        </div>
+      </div>
+<div id="stageLessonBox" style="display:none"></div><div id="stageHintBox" style="display:none"></div>
+
+      <div class="action-layout">
+        <div class="action-panel">
+          <div class="action-panel-head">
+            <div class="action-panel-title">进攻动作</div>
+            <div class="group-hint">左手主攻，先看气量</div>
+          </div>
+          <div class="attack-rows" id="attackGrid"></div>
+          <div class="action-panel-note"><b>进攻逻辑：</b>所有主动出手都在这里。先看气量，再决定这手是抢资源、压阶、终结，还是为下一回合铺势。</div>
+        </div>
+
+        <div class="action-panel">
+          <div class="action-panel-head">
+            <div class="action-panel-title">防守 / 反制</div>
+            <div class="group-hint">右手防御链</div>
+          </div>
+          <div class="defense-grid" id="defenseGrid"></div>
+          <div class="action-panel-note"><b>防御链条：</b>吸收应对分散；中防防守集中且能起势；反弹才有真正的反弹效果。<br><b>同阶分散强于集中，但分散会被吸收。</b></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="side">
+      <section class="panel result" id="resultBanner">
+        <div class="big" id="resultBig">胜利</div>
+        <div class="small" id="resultSmall">先看这套完整骨架是不是好玩。</div>
+        <div style="margin-top:10px"><button class="btn primary" id="resultActionBtn">下一关</button></div>
+      </section>
+      <section class="panel situation" id="situationPanel">
+        <div class="situation-grid">
+          <div class="s-box">
+            <div class="s-title">最近两回合</div>
+            <div class="s-list" id="recentTurnsBox"></div>
+          </div>
+          <div class="s-box">
+            <div class="s-title">当前威胁 / 兑现</div>
+            <div class="s-list" id="threatBox"></div>
+          </div>
+        </div>
+      </section>
+      <section class="panel log" id="battleLog"></section>
+    </section>
+  </section>
+
+  
+
+  <div class="modal" id="guideModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">闯关说明</div>
+        <button class="btn secondary small-btn" id="closeGuideModalBtn">关闭</button>
+      </div>
+      <div class="modal-body" style="font-size:12px;color:#475569;line-height:1.7">
+        这版把敌人排成固定顺序，每关都带一个教学目标。<br>
+        你赢下当前关后，会自动解锁下一关；失败则重开本关。<br>
+        目标不是一口气学会全部，而是一路从“会出招”走到“会读人”。<br><br>
+        推荐顺序：先打通前两关建立手感，再进入中段考核，最后再碰起势型与终结型。
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="stageModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">选关</div>
+        <button class="btn secondary small-btn" id="closeStageModalBtn">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div id="stageSelectGrid" class="stage-select-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="chartModal">
+    <div class="modal-card chart-card">
+      <div class="modal-head">
+        <div class="modal-title">招式阶段图谱</div>
+        <button class="btn secondary small-btn" id="closeChartModalBtn">关闭</button>
+      </div>
+      <div class="modal-body chart-body">
+        <div class="chart-block"><b>一气</b><br>瓦斯、嘎波。<br><span class="muted2">同阶分散强于集中，但分散会被吸收，集中会被中防。</span></div>
+        <div class="chart-block"><b>二气</b><br>A卡、A分、色诱。<br><span class="muted2">色诱是强终结线，但会被掐反制。</span></div>
+        <div class="chart-block"><b>三气</b><br>伏虎、伏分。<br><span class="muted2">三阶是高压，但不是无解。</span></div>
+        <div class="chart-block"><b>四气</b><br>天眼。<br><span class="muted2">高成本强压，注意镜面与整体节奏。</span></div>
+        <div class="chart-block"><b>中防系</b><br>中防起势 → 六脉 / 六散 → 降龙 / 降分（3发）→ 末日。<br><span class="muted2">中防本身不带反弹；反弹才有反弹效果。</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  const INIT_HP = 100, INIT_QI = 0, DAMAGE = 50;
+  const BASE_ACTIONS = ["运气", "夺气", "瓦斯", "嘎波", "A卡", "A分", "色诱", "伏虎", "伏分", "天眼", "中防", "逃跑", "吸收", "反弹", "掐", "镜面"];
+  function _a(qi, focused, tier, isAttack=true){ return {qi, focused, tier, isAttack}; }
+  const ACT = {
+    "运气":_a(0,null,0,false), "夺气":_a(0,null,0,false),
+    "瓦斯":_a(1,true,1,true), "嘎波":_a(1,false,1,true),
+    "A卡":_a(2,true,2,true), "A分":_a(2,false,2,true), "色诱":_a(2,null,2,true),
+    "伏虎":_a(3,true,3,true), "伏分":_a(3,false,3,true),
+    "天眼":_a(4,null,4,true),
+    "中防":_a(0,null,-1,false), "逃跑":_a(0,null,-1,false), "吸收":_a(0,null,-1,false), "反弹":_a(0,null,-1,false), "掐":_a(0,null,-1,false), "镜面":_a(0,null,-1,false),
+    "六脉":_a(1,true,2,true), "六散":_a(1,false,2,true),
+    "降龙":_a(0,true,3,true), "降分":_a(0,false,3,true), "末日":_a(0,null,4,true)
+  };
+  const REAL_ATTACKS = ["瓦斯","嘎波","A卡","A分","色诱","伏虎","伏分","天眼"];
+  const ALL_ATTACKS = REAL_ATTACKS.concat(["六脉","六散","降龙","降分","末日"]);
+  const CONCENTRATED = ["瓦斯","A卡","伏虎","六脉","降龙"];
+  const SCATTERED = ["嘎波","A分","伏分","六散","降分"];
+
+  const MOVE_META = {
+    "运气":{desc:"若未被攻击命中，则获得 1 气。", tags:["基础","蓄气"]},
+    "夺气":{desc:"对上运气可夺得 1 气；首回合暂不允许。", tags:["基础","资源压制"]},
+    "瓦斯":{desc:"1 气，集中一阶。会被嘎波拆，也会撞上中防。", tags:["集中","一阶"]},
+    "嘎波":{desc:"1 气，分散一阶。克瓦斯，但会被吸收与逃跑处理。", tags:["分散","一阶"]},
+    "A卡":{desc:"2 气，集中二阶。", tags:["集中","二阶"]},
+    "A分":{desc:"2 气，分散二阶。", tags:["分散","二阶"]},
+    "色诱":{desc:"2 气，特殊二阶终结手。会被掐反制。", tags:["特殊","二阶"]},
+    "伏虎":{desc:"3 气，集中三阶。", tags:["集中","三阶"]},
+    "伏分":{desc:"3 气，分散三阶。", tags:["分散","三阶"]},
+    "天眼":{desc:"4 气，四阶强攻；会被镜面克。", tags:["特殊","四阶"]},
+    "中防":{desc:"防集中，也是中防连招起点。", tags:["防御","起势"]},
+    "逃跑":{desc:"处理分散，对集中会出事。", tags:["防御"]},
+    "吸收":{desc:"吸收分散，通常获气；对集中会败。", tags:["反制"]},
+    "反弹":{desc:"反集中；对分散会败。", tags:["反制"]},
+    "掐":{desc:"专抓色诱；对其他攻击会败。", tags:["特殊反制"]},
+    "镜面":{desc:"主要针对天眼；对普通攻击会败。", tags:["特殊反制"]},
+    "六脉":{desc:"中防后可出，集中二阶。", tags:["中防链","二阶"]},
+    "六散":{desc:"中防后可出，分散二阶。", tags:["中防链","二阶"]},
+    "降龙":{desc:"中防链三阶集中。", tags:["中防链","三阶"]},
+    "降分":{desc:"中防链三阶分散。", tags:["中防链","三阶"]},
+    "末日":{desc:"中防链终局四阶。", tags:["中防链","终局"]}
+  };
+
+  let state = null;
+  const el = id => document.getElementById(id);
+  const AI_STYLES = ['D1教学木桩','D2套路包','平衡型','夺气干扰型','压制型','防反型','拆招型','铺势型','色诱终结型'];
+  const CAMPAIGN_STAGES = [
+    {
+      id:1, title:'第 1 关：入门试手', enemyName:'试手木桩', enemyRole:'敌方 · 教学木桩',
+      style:'D1教学木桩',
+      teach:'先感受资源与一阶攻防，不急着背完全部规则。',
+      lesson:'先看气量，再看对面会不会贪。重点体验：运气会被攻击抓，嘎波会拆瓦斯。',
+      hint:'这一关你只需要学会三件事：攒气、出一阶、看懂谁克谁。',
+      goal:'目标：先赢一把，建立“我会玩了”的感觉。'
+    },
+    {
+      id:2, title:'第 2 关：看穿套路', enemyName:'偏门练习生', enemyRole:'敌方 · 套路包',
+      style:'D2套路包',
+      teach:'开始体验“我看穿你了”的快感。',
+      lesson:'这类敌人会明显偏向某条路数。别急，先看它的第二回合倾向，再决定反制。',
+      hint:'如果你能连续两回合猜到它想干嘛，说明你已经进入博弈状态了。',
+      goal:'目标：学会利用对手的破绽，而不是只拼高阶。'
+    },
+    {
+      id:3, title:'第 3 关：常规对练', enemyName:'同届常规生', enemyRole:'敌方 · 平衡型',
+      style:'平衡型',
+      teach:'进入普通战节奏：不再明显送头，也不会太阴。',
+      lesson:'这一关是“像真人但不刁钻”的常规对手。重点看你如何在资源、方向、防反之间取舍。',
+      hint:'别想一次把所有线都猜中，先盯住当前最危险的一层。',
+      goal:'目标：在普通对手面前稳定取胜。'
+    },
+    {
+      id:4, title:'第 4 关：守中带杀', enemyName:'回锋守门生', enemyRole:'敌方 · 防反型',
+      style:'防反型',
+      teach:'开始学“别无脑出强招”。',
+      lesson:'这类敌人会用中防、吸收、反弹设局。你要学会不给对面最舒服的窗口。',
+      hint:'你越直，他越舒服；你越会变线，他越难受。',
+      goal:'目标：学会绕开防反，而不是一头撞上去。'
+    },
+    {
+      id:5, title:'第 5 关：斩杀窗口', enemyName:'异路学员', enemyRole:'敌方 · 色诱终结型',
+      style:'色诱终结型',
+      teach:'开始感受“2 气窗口”的心理压力。',
+      lesson:'这类敌人平时不一定显眼，但一旦摸到 2 气，就可能突然给你终结线。',
+      hint:'你不需要每回合都怕色诱，但当对方摸到 2 气时，必须开始警觉。',
+      goal:'目标：学会尊重终结窗口，但不被它吓住。'
+    },
+    {
+      id:6, title:'第 6 关：起势变身', enemyName:'上席候补', enemyRole:'敌方 · 铺势型',
+      style:'铺势型',
+      teach:'最后一关看“起势”——中防不是单纯挡招，而是变身的前奏。',
+      lesson:'中防指示灯一亮，就代表对手可能进入六脉/六散，再往下滚成降龙/降分与末日。',
+      hint:'这一关不是让你记全连招，而是让你知道：为什么中防会让人紧张。',
+      goal:'目标：在对手起势前读到它，或者至少知道自己是怎么输的。'
+    }
+  ];
+
+
+  function createState(){
+    return {
+      round: 1,
+      gameOver: false,
+      revealLocked: false,
+      selectedMove: null,
+      pendingEnemyMove: null,
+      player: {hp: INIT_HP, qi: INIT_QI},
+      enemy: {hp: INIT_HP, qi: INIT_QI, lastMove: null},
+      enemyStyle: null,
+      stageIndex: 0,
+      pState: [false,0,0],
+      oState: [false,0,0],
+      log: [],
+      history: []
+    };
+  }
+
+  function pushLog(text, kind='normal'){
+    state.log.unshift({text,kind});
+    state.log = state.log.slice(0, 24);
+    renderLog();
+  }
+
+  function renderLog(){
+    if(!state.log.length){
+      el('battleLog').innerHTML = `<div class="entry">原型开始。重点观察：这套规则现在是博弈，还是仍然像猜拳。</div>`;
+      return;
+    }
+    el('battleLog').innerHTML = state.log.map(item => `<div class="entry ${item.kind}">${escapeHtml(item.text)}</div>`).join('');
+  }
+
+  function pushHistory(playerAction, enemyAction, result){
+    state.history.unshift({
+      round: state.round,
+      playerAction,
+      enemyAction,
+      resultText: result.pLose ? '你败北' : result.oLose ? '对手败北' : result.dmgO > result.dmgP ? '你占优' : result.dmgP > result.dmgO ? '对手占优' : '互相试探'
+    });
+    state.history = state.history.slice(0, 2);
+  }
+
+  function renderSituation(){
+    const recentRoot = el('recentTurnsBox');
+    const threatRoot = el('threatBox');
+    if(!recentRoot || !threatRoot) return;
+
+    if(!state.history.length){
+      recentRoot.innerHTML = '<div class="s-item">还没有回合记录。先打一手，看看对手的路数。</div>';
+    }else{
+      recentRoot.innerHTML = state.history.map(h => (
+        `<div class="s-item"><strong>第 ${h.round} 回合</strong>｜你 ${escapeHtml(h.playerAction)} vs 敌 ${escapeHtml(h.enemyAction)}<br>${escapeHtml(h.resultText)}</div>`
+      )).join('');
+    }
+
+    const items = [];
+    const enemyQi = state.enemy.qi;
+    const playerQi = state.player.qi;
+    const [enemyCanLiu, enemyJiang, enemyMori] = state.oState;
+    const [playerCanLiu, playerJiang, playerMori] = state.pState;
+
+    if(enemyCanLiu) items.push('<div class="s-item warn"><strong>敌方起势：</strong>下一手可出六脉 / 六散。</div>');
+    else if(enemyJiang > 0) items.push(`<div class="s-item warn"><strong>敌方连招：</strong>降龙 / 降分还剩 ${enemyJiang} 发。</div>`);
+    else if(enemyMori > 0) items.push('<div class="s-item warn"><strong>敌方终结：</strong>末日待命，本回合必须提防。</div>');
+    else if(enemyQi >= 4) items.push('<div class="s-item warn"><strong>敌方 4 气：</strong>天眼线已开启，镜面价值提升。</div>');
+    else if(enemyQi >= 3) items.push('<div class="s-item warn"><strong>敌方 3 气：</strong>可出伏虎 / 伏分，三阶威胁已到。</div>');
+    else if(enemyQi >= 2) items.push('<div class="s-item warn"><strong>敌方 2 气：</strong>A卡 / A分 / 色诱都进入威胁范围。</div>');
+    else if(enemyQi >= 1) items.push('<div class="s-item"><strong>敌方 1 气：</strong>一阶攻防与起势试探都可能出现。</div>');
+    else items.push('<div class="s-item"><strong>敌方无气：</strong>更像在运气、试探或防守换线。</div>');
+
+    if(playerCanLiu) items.push('<div class="s-item em"><strong>我方兑现：</strong>六脉 / 六散可用，连招入口已亮。</div>');
+    else if(playerJiang > 0) items.push(`<div class="s-item em"><strong>我方连招：</strong>降龙 / 降分还剩 ${playerJiang} 发。</div>`);
+    else if(playerMori > 0) items.push('<div class="s-item em"><strong>我方终结：</strong>末日可用，可以考虑收局。</div>');
+    else if(playerQi >= 4) items.push('<div class="s-item em"><strong>我方 4 气：</strong>天眼线开启，注意镜面博弈。</div>');
+    else if(playerQi >= 3) items.push('<div class="s-item em"><strong>我方 3 气：</strong>伏虎 / 伏分可以直接压阶。</div>');
+    else if(playerQi >= 2) items.push('<div class="s-item em"><strong>我方 2 气：</strong>A卡 / A分 / 色诱进入可兑现区。</div>');
+    else if(playerQi >= 1) items.push('<div class="s-item em"><strong>我方 1 气：</strong>一阶与中防起势都开始成立。</div>');
+    else items.push('<div class="s-item"><strong>我方无气：</strong>先争资源，再考虑压阶。</div>');
+
+    threatRoot.innerHTML = items.join('');
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+
+  function getLegalActions(hp, qi, comboState, isPlayer){
+    const canLiu = comboState[0], jiangLeft = comboState[1], moriLeft = comboState[2];
+    const actions = [];
+    for(const name of BASE_ACTIONS){
+      if(!isPlayer && name === '镜面') continue;
+      if(name === '夺气' && state.round === 1) continue;
+      if((ACT[name]?.qi || 0) > qi) continue;
+      actions.push(name);
+    }
+    if(canLiu && qi >= 1) actions.push('六脉','六散');
+    if(jiangLeft > 0) actions.push('降龙','降分');
+    if(moriLeft > 0) actions.push('末日');
+    return actions;
+  }
+
+  function resolve(pAction, oAction){
+    let pLose=false, oLose=false, dmgP=0, dmgO=0, qiP=0, qiO=0;
+
+    if (pAction === '末日') {
+      if (oAction === '反弹' || oAction === '天眼') pLose = true; else oLose = true;
+    }
+    if (oAction === '末日') {
+      if (pAction === '反弹' || pAction === '天眼') oLose = true; else pLose = true;
+    }
+    if (pLose || oLose) return {pLose,oLose,dmgP,dmgO,qiP,qiO};
+
+    if (pAction === '天眼' && oAction === '镜面') pLose = true;
+    if (oAction === '天眼' && pAction === '镜面') oLose = true;
+    if (pAction === '天眼' && oAction !== '镜面') oLose = true;
+    if (oAction === '天眼' && pAction !== '镜面') pLose = true;
+    if (pLose || oLose) return {pLose,oLose,dmgP,dmgO,qiP,qiO};
+
+    if (pAction === '掐' && oAction === '色诱') oLose = true;
+    else if (pAction === '掐' && ALL_ATTACKS.includes(oAction)) pLose = true;
+    if (oAction === '掐' && pAction === '色诱') pLose = true;
+    else if (oAction === '掐' && ALL_ATTACKS.includes(pAction)) oLose = true;
+    if (pLose || oLose) return {pLose,oLose,dmgP,dmgO,qiP,qiO};
+
+    if (pAction === '色诱') {
+      if (['运气','色诱'].includes(oAction)) {
+      } else if (['夺气','瓦斯','嘎波','A卡','A分','中防','逃跑','吸收','反弹'].includes(oAction)) {
+        oLose = true;
+      } else if (oAction === '掐') {
+        pLose = true;
+      } else if (['伏虎','伏分'].includes(oAction)) {
+        dmgP += DAMAGE;
+      } else if (['天眼','镜面'].includes(oAction)) {
+        pLose = true;
+      } else if (['六脉','六散','降龙','降分'].includes(oAction)) {
+        oLose = true;
+      }
+    }
+    if (oAction === '色诱') {
+      if (['运气','色诱'].includes(pAction)) {
+      } else if (['夺气','瓦斯','嘎波','A卡','A分','中防','逃跑','吸收','反弹'].includes(pAction)) {
+        pLose = true;
+      } else if (pAction === '掐') {
+        oLose = true;
+      } else if (['伏虎','伏分'].includes(pAction)) {
+        dmgO += DAMAGE;
+      } else if (['天眼','镜面'].includes(pAction)) {
+        oLose = true;
+      } else if (['六脉','六散','降龙','降分'].includes(pAction)) {
+        pLose = true;
+      }
+    }
+    if (pLose || oLose) return {pLose,oLose,dmgP,dmgO,qiP,qiO};
+
+    if (pAction === '镜面' && ALL_ATTACKS.includes(oAction) && oAction !== '天眼') pLose = true;
+    if (oAction === '镜面' && ALL_ATTACKS.includes(pAction) && pAction !== '天眼') oLose = true;
+    if (pLose || oLose) return {pLose,oLose,dmgP,dmgO,qiP,qiO};
+
+    if (pAction === '夺气' && ALL_ATTACKS.includes(oAction)) pLose = true;
+    if (oAction === '夺气' && ALL_ATTACKS.includes(pAction)) oLose = true;
+    if (pLose || oLose) return {pLose,oLose,dmgP,dmgO,qiP,qiO};
+
+    if (pAction === '运气' && ALL_ATTACKS.includes(oAction)) pLose = true;
+    if (oAction === '运气' && ALL_ATTACKS.includes(pAction)) oLose = true;
+    if (pLose || oLose) return {pLose,oLose,dmgP,dmgO,qiP,qiO};
+
+    if (CONCENTRATED.includes(pAction) && SCATTERED.includes(oAction)) dmgP += DAMAGE;
+    if (SCATTERED.includes(pAction) && CONCENTRATED.includes(oAction)) dmgO += DAMAGE;
+
+    const tier = a => ACT[a]?.tier ?? 0;
+    if (REAL_ATTACKS.includes(pAction) && REAL_ATTACKS.includes(oAction)) {
+      const pf = ACT[pAction].focused, of = ACT[oAction].focused;
+      if (pf === of && pf != null && tier(pAction) !== tier(oAction)) {
+        if (tier(pAction) > tier(oAction)) dmgO += DAMAGE; else dmgP += DAMAGE;
+      }
+    }
+
+    if (['六脉','六散'].includes(pAction) && ['六脉','六散'].includes(oAction)) {
+      if (pAction === '六散' && oAction === '六脉') oLose = true;
+      else if (pAction === '六脉' && oAction === '六散') pLose = true;
+      if (pLose || oLose) return {pLose,oLose,dmgP,dmgO,qiP,qiO};
+    }
+    if (['降龙','降分'].includes(pAction) && ['降龙','降分'].includes(oAction)) {
+      if (pAction === '降分' && oAction === '降龙') oLose = true;
+      else if (pAction === '降龙' && oAction === '降分') pLose = true;
+      if (pLose || oLose) return {pLose,oLose,dmgP,dmgO,qiP,qiO};
+    }
+
+    if (['瓦斯','A卡','伏虎','六脉','降龙'].includes(pAction)) {
+      if (oAction === '中防') {
+        if (['伏虎','降龙'].includes(pAction)) dmgO += DAMAGE;
+      } else if (oAction === '反弹') {
+        if (pAction === '伏虎') oLose = true;
+        else if (pAction === '降龙') dmgP += DAMAGE;
+        else dmgP += DAMAGE;
+      } else if (oAction === '吸收') {
+        oLose = true;
+      }
+    }
+    if (['瓦斯','A卡','伏虎','六脉','降龙'].includes(oAction)) {
+      if (pAction === '中防') {
+        if (['伏虎','降龙'].includes(oAction)) dmgP += DAMAGE;
+      } else if (pAction === '反弹') {
+        if (oAction === '伏虎') pLose = true;
+        else if (oAction === '降龙') dmgO += DAMAGE;
+        else dmgO += DAMAGE;
+      } else if (pAction === '吸收') {
+        pLose = true;
+      }
+    }
+
+    if (['嘎波','A分','伏分','六散','降分'].includes(pAction)) {
+      if (oAction === '逃跑') {
+        if (['伏分','降分'].includes(pAction)) dmgO += DAMAGE;
+      } else if (oAction === '吸收') {
+        if (pAction === '伏分') oLose = true;
+        else if (pAction === '降分') qiO += 2;
+        else qiO += 1;
+      } else if (oAction === '反弹') {
+        oLose = true;
+      }
+    }
+    if (['嘎波','A分','伏分','六散','降分'].includes(oAction)) {
+      if (pAction === '逃跑') {
+        if (['伏分','降分'].includes(oAction)) dmgP += DAMAGE;
+      } else if (pAction === '吸收') {
+        if (oAction === '伏分') pLose = true;
+        else if (oAction === '降分') qiP += 2;
+        else qiP += 1;
+      } else if (pAction === '反弹') {
+        pLose = true;
+      }
+    }
+
+    if (['瓦斯','A卡','伏虎','六脉','降龙'].includes(pAction) && oAction === '逃跑') oLose = true;
+    if (['瓦斯','A卡','伏虎','六脉','降龙'].includes(oAction) && pAction === '逃跑') pLose = true;
+    if (['嘎波','A分','伏分','六散','降分'].includes(pAction) && oAction === '中防') oLose = true;
+    if (['嘎波','A分','伏分','六散','降分'].includes(oAction) && pAction === '中防') pLose = true;
+
+    if (pAction === '运气' && !pLose && oAction !== '夺气') qiP += 1;
+    if (oAction === '运气' && !oLose && pAction !== '夺气') qiO += 1;
+    if (pAction === '夺气' && oAction === '运气') qiP += 1;
+    if (oAction === '夺气' && pAction === '运气') qiO += 1;
+
+    return {pLose,oLose,dmgP,dmgO,qiP,qiO};
+  }
+
+  function aiChoose(legal, qi, roundNum, style, comboState, playerQi, lastPlayerMove){
+    const [canLiu, jiangLeft, moriLeft] = comboState;
+    const pick = arr => randomPick(arr.filter(a => legal.includes(a)));
+    const w = arr => weightedChoice(arr.filter(([a]) => legal.includes(a))) || randomPick(legal);
+    const isPlayerConc = ['瓦斯','A卡','伏虎','六脉','降龙'].includes(lastPlayerMove);
+    const isPlayerScat = ['嘎波','A分','伏分','六散','降分'].includes(lastPlayerMove);
+
+    if (moriLeft > 0 && legal.includes('末日')) return '末日';
+    if (jiangLeft > 0) {
+      if (style === '铺势型') return pick(['降龙','降分','反弹']) || randomPick(legal);
+      if (style === '防反型') return pick(['降龙','降分','反弹']) || randomPick(legal);
+      return pick(['降龙','降分']) || randomPick(legal);
+    }
+    if (canLiu && qi >= 1) {
+      if (style === '铺势型') return pick(['六脉','六散','反弹','吸收']) || randomPick(legal);
+      if (style === '防反型') return pick(['六脉','六散','反弹']) || randomPick(legal);
+      return pick(['六散','六脉']) || randomPick(legal);
+    }
+
+    if (roundNum === 1) {
+      if (style === 'D1教学木桩') return legal.includes('运气') ? '运气' : randomPick(legal);
+      if (style === 'D2套路包') return legal.includes('运气') ? '运气' : randomPick(legal);
+      return legal.includes('运气') ? '运气' : randomPick(legal);
+    }
+
+    if (style === 'D1教学木桩') {
+      if (qi >= 2) return w([['A卡',18],['A分',18],['运气',24],['中防',10],['逃跑',12],['吸收',10],['反弹',8]]);
+      if (qi === 1) return w([['瓦斯',18],['嘎波',18],['运气',32],['中防',10],['逃跑',10],['吸收',6],['反弹',6]]);
+      return w([['运气',55],['中防',8],['逃跑',12],['嘎波',12],['瓦斯',13]]);
+    }
+
+    if (style === 'D2套路包') {
+      if (qi >= 2) {
+        if (isPlayerConc) return w([['A分',24],['中防',22],['反弹',16],['逃跑',10],['运气',10],['A卡',8],['色诱',10]]);
+        if (isPlayerScat) return w([['吸收',24],['逃跑',22],['A分',14],['运气',12],['瓦斯',12],['色诱',8],['A卡',8]]);
+        return w([['A分',20],['逃跑',18],['吸收',16],['运气',18],['A卡',10],['色诱',18]]);
+      }
+      if (qi === 1) {
+        if (isPlayerConc) return w([['嘎波',28],['中防',20],['运气',22],['逃跑',10],['吸收',10],['瓦斯',10]]);
+        if (isPlayerScat) return w([['吸收',24],['逃跑',22],['瓦斯',18],['运气',18],['中防',8],['嘎波',10]]);
+        return w([['嘎波',24],['运气',24],['逃跑',18],['吸收',14],['瓦斯',12],['中防',8]]);
+      }
+      return w([['运气',42],['逃跑',18],['吸收',14],['嘎波',14],['瓦斯',12]]);
+    }
+
+    if (style === '压制型') {
+      if (qi >= 4 && legal.includes('天眼') && Math.random() < 0.55) return '天眼';
+      if (qi >= 3) return pick(['伏虎','伏分','A卡','A分']) || randomPick(legal);
+      if (qi === 2) return pick(['A卡','A分','反弹','中防']) || randomPick(legal);
+      if (qi === 1) {
+        if (playerQi >= 2) return pick(['瓦斯','嘎波','运气','中防']) || randomPick(legal);
+        return pick(['瓦斯','嘎波','运气']) || randomPick(legal);
+      }
+      return w([['运气',68],['夺气',22],['中防',10]]);
+    }
+
+    if (style === '拆招型') {
+      if (qi >= 4 && playerQi >= 3 && legal.includes('天眼') && Math.random() < 0.20) return '天眼';
+      if (qi >= 3) return pick(['伏分','伏虎','吸收','逃跑','反弹']) || randomPick(legal);
+      if (qi === 2) {
+        if (isPlayerConc) return pick(['A分','中防','反弹','逃跑']) || randomPick(legal);
+        if (isPlayerScat) return pick(['吸收','逃跑','A分','瓦斯']) || randomPick(legal);
+        return pick(['A分','吸收','逃跑','反弹','A卡']) || randomPick(legal);
+      }
+      if (qi === 1) {
+        if (lastPlayerMove === '瓦斯') return pick(['嘎波','中防','运气']) || randomPick(legal);
+        if (lastPlayerMove === '嘎波') return pick(['吸收','逃跑','瓦斯']) || randomPick(legal);
+        return pick(['嘎波','吸收','逃跑','运气']) || randomPick(legal);
+      }
+      return w([['运气',50],['夺气',15],['逃跑',20],['吸收',15]]);
+    }
+
+    if (style === '铺势型') {
+      if (qi >= 1 && legal.includes('中防')) {
+        const chance = playerQi >= 1 ? 0.26 : 0.16;
+        if (Math.random() < chance) return '中防';
+      }
+      if (qi >= 4 && legal.includes('天眼') && Math.random() < 0.12) return '天眼';
+      if (qi >= 3) return pick(['伏虎','伏分','中防','反弹','吸收']) || randomPick(legal);
+      if (qi === 2) {
+        if (isPlayerScat) return pick(['吸收','逃跑','A卡','A分','运气']) || randomPick(legal);
+        if (isPlayerConc) return pick(['反弹','A分','中防','A卡','运气']) || randomPick(legal);
+        return pick(['A卡','A分','吸收','反弹','中防','运气']) || randomPick(legal);
+      }
+      if (qi === 1) return pick(['瓦斯','嘎波','运气','吸收','反弹','中防']) || randomPick(legal);
+      return w([['运气',56],['夺气',10],['中防',14],['吸收',10],['逃跑',10]]);
+    }
+
+    if (style === '防反型') {
+      if (qi >= 4 && playerQi >= 3 && legal.includes('天眼') && Math.random() < 0.12) return '天眼';
+      if (qi >= 3) {
+        if (isPlayerConc) return pick(['反弹','中防','伏分']) || randomPick(legal);
+        if (isPlayerScat) return pick(['吸收','逃跑','伏虎']) || randomPick(legal);
+        return pick(['反弹','吸收','逃跑','中防','伏虎','伏分']) || randomPick(legal);
+      }
+      if (qi === 2) {
+        if (isPlayerConc) return pick(['反弹','中防','A分']) || randomPick(legal);
+        if (isPlayerScat) return pick(['吸收','逃跑','A卡']) || randomPick(legal);
+        return pick(['中防','吸收','反弹','逃跑','A卡','A分']) || randomPick(legal);
+      }
+      if (qi === 1) {
+        if (playerQi >= 1) return pick(['中防','吸收','反弹','逃跑','瓦斯','嘎波']) || randomPick(legal);
+        return pick(['中防','吸收','反弹','逃跑','运气']) || randomPick(legal);
+      }
+      return w([['运气',40],['中防',25],['吸收',15],['反弹',10],['逃跑',10]]);
+    }
+
+    if (style === '夺气干扰型') {
+      if (qi >= 4 && legal.includes('天眼') && Math.random() < 0.10) return '天眼';
+      if (qi >= 3) return pick(['伏虎','伏分','夺气','反弹']) || randomPick(legal);
+      if (qi === 2) {
+        if (playerQi === 0) return pick(['夺气','运气','A卡','A分']) || randomPick(legal);
+        return pick(['夺气','A卡','A分','逃跑']) || randomPick(legal);
+      }
+      if (qi === 1) {
+        if (playerQi === 0) return pick(['夺气','运气','瓦斯']) || randomPick(legal);
+        return pick(['夺气','瓦斯','嘎波','逃跑']) || randomPick(legal);
+      }
+      return w([['运气',38],['夺气',42],['逃跑',10],['中防',10]]);
+    }
+
+    if (style === '色诱终结型') {
+      if (qi >= 4 && legal.includes('天眼') && playerQi >= 3 && Math.random() < 0.08) return '天眼';
+      if (qi >= 3) return pick(['色诱','伏虎','伏分','A卡','A分']) || randomPick(legal);
+      if (qi === 2) {
+        if (playerQi === 0) return pick(['夺气','运气','A卡','A分','色诱']) || randomPick(legal);
+        if (isPlayerConc) return pick(['色诱','A分','中防','反弹']) || randomPick(legal);
+        if (isPlayerScat) return pick(['色诱','吸收','逃跑','A卡']) || randomPick(legal);
+        return pick(['色诱','A卡','A分','运气','夺气']) || randomPick(legal);
+      }
+      if (qi === 1) return pick(['运气','夺气','瓦斯','嘎波','逃跑']) || randomPick(legal);
+      return w([['运气',45],['夺气',15],['嘎波',15],['瓦斯',15],['逃跑',10]]);
+    }
+
+    // 平衡型
+    if (qi >= 4 && legal.includes('天眼') && Math.random() < 0.18) return '天眼';
+    if (qi >= 3) return pick(['伏虎','伏分','反弹','吸收','中防']) || randomPick(legal);
+    if (qi === 2) return pick(['A卡','A分','色诱','中防','吸收','反弹','逃跑']) || randomPick(legal);
+    if (qi === 1) return pick(['瓦斯','嘎波','中防','吸收','反弹','逃跑','运气']) || randomPick(legal);
+    return w([['运气',45],['夺气',15],['中防',10],['逃跑',10],['吸收',10],['反弹',10]]);
+  }
+
+  function applyComboAfterTurn(action, comboState, qiBefore, tookDamageFromAttack){
+    let [canLiu, jiangLeft, moriLeft] = comboState;
+    if (canLiu && tookDamageFromAttack) canLiu = false;
+    if (action === '中防' && !tookDamageFromAttack && qiBefore >= 1) canLiu = true;
+    else if (action === '六脉' || action === '六散') { canLiu = false; jiangLeft = 3; moriLeft = 0; }
+    else if (action === '降龙' || action === '降分') { jiangLeft = Math.max(0, jiangLeft - 1); if (jiangLeft === 0) moriLeft = 1; }
+    else if (action === '末日') moriLeft = 0;
+    else if (action !== '中防') canLiu = false;
+    return [canLiu, jiangLeft, moriLeft];
+  }
+
+  function weightedChoice(arr){
+    if (!arr.length) return null;
+    const total = arr.reduce((s, [,w]) => s+w, 0);
+    let r = Math.random() * total;
+    for (const [item, w] of arr){ r -= w; if (r <= 0) return item; }
+    return arr[arr.length - 1][0];
+  }
+  function randomPick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function assignEnemyStyle(force=false){
+    const stage = CAMPAIGN_STAGES[state.stageIndex] || CAMPAIGN_STAGES[0];
+    if(force || !state.enemyStyle){
+      state.enemyStyle = stage.style;
+    }
+    return state.enemyStyle;
+  }
+
+
+  function comboText([canLiu, jiangLeft, moriLeft]){
+    const parts=[];
+    if(canLiu) parts.push('可出六脉/六散');
+    if(jiangLeft>0) parts.push(`降龙/降分剩余${jiangLeft}发`);
+    if(moriLeft>0) parts.push('末日待命');
+    return parts.length ? parts.join(' · ') : '—';
+  }
+
+  function comboBadges([canLiu, jiangLeft, moriLeft]){
+    const parts = [];
+    if(canLiu) parts.push('<span class="state-badge combo">可出六脉/六散</span>');
+    if(jiangLeft>0) parts.push(`<span class="state-badge chain">降龙/降分 ${jiangLeft} 发</span>`);
+    if(moriLeft>0) parts.push('<span class="state-badge finisher">末日待命</span>');
+    return parts.length ? parts.join('') : '<span class="state-badge empty">—</span>';
+  }
+
+  function updateStanceLamp(id, comboState){
+    const node = el(id);
+    if(!node) return;
+    const lampText = node.querySelector('.lamp-text');
+    if(comboState[0]){
+      node.classList.add('on');
+      lampText.textContent = '中防起势';
+    }else{
+      node.classList.remove('on');
+      lampText.textContent = '未起势';
+    }
+  }
+
+  function recommendedGroups(){
+    const [canLiu, jiangLeft, moriLeft] = state.pState;
+    const set = new Set();
+    if(canLiu || jiangLeft>0 || moriLeft>0){
+      set.add('中防连招');
+      if(state.player.qi >= 1) set.add('防御 / 反制');
+      return set;
+    }
+    set.add('基础层');
+    if(state.player.qi >= 1) set.add('防御 / 反制');
+    if(state.player.qi >= 2) set.add('二阶');
+    if(state.player.qi >= 3) set.add('三阶');
+    return set;
+  }
+
+  function groupHint(title){
+    const [canLiu, jiangLeft, moriLeft] = state.pState;
+    if(title === '中防连招' && (canLiu || jiangLeft>0 || moriLeft>0)) return '当前起势层';
+    if(title === '基础层' && state.player.qi <= 1) return '当前基础决策';
+    if(title === '防御 / 反制' && state.player.qi >= 1) return '当前博弈关键';
+    if(title === '二阶' && state.player.qi >= 2) return '可开始压阶';
+    if(title === '三阶' && state.player.qi >= 3) return '高压威胁';
+    return '';
+  }
+
+
+
+  function styleTier(style){
+    if(style === 'D1教学木桩') return 'Demo第1战';
+    if(style === 'D2套路包') return 'Demo第2战';
+    if(style === '铺势型') return '精英 / Boss预热';
+    if(style === '压制型') return '强压精英';
+    if(style === '防反型' || style === '拆招型') return '中段考核';
+    if(style === '夺气干扰型' || style === '平衡型') return '普通战';
+    if(style === '色诱终结型') return '特殊精英';
+    return '未知';
+  }
+
+  function enemyIntent(){
+    const qi = state.enemy.qi;
+    const [canLiu, jiangLeft, moriLeft] = state.oState;
+    if(canLiu) return { title: '中防起势', desc: '对手已亮中防灯，下一回合可能接六脉 / 六散。' };
+    if(jiangLeft > 0) return { title: '连招压制', desc: `对手已进入降龙 / 降分阶段，剩余 ${jiangLeft} 发。` };
+    if(moriLeft > 0) return { title: '末日待命', desc: '对手已具备末日资格，本回合必须重点提防。' };
+    if(state.round === 1) return { title: `${state.enemyStyle} · 开局试探`, desc: '首回合暂不允许夺气，通常会在运气、基础攻防之间试探。' };
+    if(state.enemyStyle === 'D1教学木桩'){
+      return { title: '教学试探', desc: '它会故意露出明显破绽，优先让你赢一两手。' };
+    }
+    if(state.enemyStyle === 'D2套路包'){
+      return { title: '套路包', desc: '它有清晰偏好，容易被读，但会让你第一次体验“看穿了对手”。' };
+    }
+    if(state.enemyStyle === '压制型'){
+      if(qi >= 3) return { title: '高阶压制', desc: '他更偏向伏虎 / 伏分 / 天眼，不会轻易把高气浪费在保守动作上。' };
+      if(qi >= 1) return { title: '压阶逼迫', desc: '他会尽快把气转成正面压力，用集中或同阶压你。' };
+      return { title: '蓄气压人', desc: '他优先把气攒起来，准备后续直接压阶。' };
+    }
+    if(state.enemyStyle === '拆招型'){
+      return { title: '拆招试探', desc: '他会主动找你线路的漏洞：集中怕分散，分散怕吸收 / 逃跑。' };
+    }
+    if(state.enemyStyle === '铺势型'){
+      return { title: '铺势变身', desc: '他愿意亮中防灯，但不会再固定第二轮中防。' };
+    }
+    if(state.enemyStyle === '防反型'){
+      return { title: '守中带杀', desc: '他会围绕中防、吸收、反弹设局，不急着先手交大招。' };
+    }
+    if(state.enemyStyle === '夺气干扰型'){
+      return { title: '资源骚扰', desc: '他会尽量卡你运气和空档，逼你在夺气 / 运气 / 防守之间猜。' };
+    }
+    if(state.enemyStyle === '色诱终结型'){
+      return { title: '斩杀窗口', desc: '他会先混线伪装，一旦摸到 2 气就可能突然色诱收头。' };
+    }
+    return { title: '平衡试探', desc: '他什么都会一点，适合当普通对手，也最像随机真人。' };
+  }
+
+  function setVerdict(title, desc){
+    el('verdictTitle').textContent = title;
+    el('verdictDesc').textContent = desc;
+  }
+
+  function getJudgement(pAction, oAction, result, nextPStatePreview, nextOStatePreview){
+    if(result.pLose && result.oLose) return ['双方判败', '这手撞成了双败。'];
+    if(result.pLose) return ['你被判败', `${oAction} 克中了 ${pAction}。`];
+    if(result.oLose) return ['对手判败', `${pAction} 克中了 ${oAction}。`];
+
+    if(pAction==='中防' && ['瓦斯','A卡','六脉'].includes(oAction)) return ['中防成功', '挡住集中，不反弹。'];
+    if(oAction==='中防' && ['瓦斯','A卡','六脉'].includes(pAction)) return ['对手中防', '你的集中被挡住。'];
+
+    if(pAction==='吸收' && ['嘎波','A分','六散'].includes(oAction)) return ['吸收成功', '抓到分散，吃招转气。'];
+    if(oAction==='吸收' && ['嘎波','A分','六散'].includes(pAction)) return ['对手吸收', '你的分散被吸了。'];
+
+    if(pAction==='反弹' && ['瓦斯','A卡','六脉'].includes(oAction)) return ['反弹成功', '这次反弹真的成立。'];
+    if(oAction==='反弹' && ['瓦斯','A卡','六脉'].includes(pAction)) return ['对手反弹', '你的集中被反弹了。'];
+
+    if(pAction==='逃跑' && ['嘎波','A分','六散'].includes(oAction)) return ['逃跑成功', '你避开了分散。'];
+    if(oAction==='逃跑' && ['嘎波','A分','六散'].includes(pAction)) return ['对手逃跑', '对手避开了你的分散。'];
+
+    if(nextPStatePreview && nextPStatePreview[0] && pAction==='中防') return ['中防起势', '你亮灯了，后续可接六脉/六散。'];
+    if(nextOStatePreview && nextOStatePreview[0] && oAction==='中防') return ['对手起势', '对手亮灯了，后续可接六脉/六散。'];
+
+    if(result.qiP > result.qiO && result.qiP > 0) return ['你拿到气', `这手之后你多了 ${result.qiP} 气。`];
+    if(result.qiO > result.qiP && result.qiO > 0) return ['对手拿到气', `对手这手多了 ${result.qiO} 气。`];
+
+    if(result.dmgO > result.dmgP) return ['你占优', `你打出 ${result.dmgO} 伤害。`];
+    if(result.dmgP > result.dmgO) return ['对手占优', `你吃了 ${result.dmgP} 伤害。`];
+
+    return ['平过', '这手双方都没赚到明显优势。'];
+  }
+
+  function triggerFlash(cardId, type){
+    const elCard = el(cardId);
+    if(!elCard) return;
+    elCard.classList.remove('damage-flash','gain-flash','combo-flash');
+    void elCard.offsetWidth;
+    if(type === 'gain') elCard.classList.add('gain-flash');
+    else if(type === 'combo') elCard.classList.add('combo-flash');
+    else elCard.classList.add('damage-flash');
+  }
+
+  let __audioCtx = null;
+  function getAudioCtx(){
+    try{
+      if(__audioCtx) return __audioCtx;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if(!Ctx) return null;
+      __audioCtx = new Ctx();
+      return __audioCtx;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function playSfx(kind){
+    const ctx = getAudioCtx();
+    if(!ctx) return;
+    try{
+      if(ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const presets = {
+        hit:    {type:'triangle', f1:220, f2:120, dur:0.08, g:0.045},
+        gain:   {type:'sine',     f1:620, f2:820, dur:0.10, g:0.030},
+        stance: {type:'square',   f1:280, f2:520, dur:0.12, g:0.028},
+      };
+      const p = presets[kind] || presets.hit;
+      osc.type = p.type;
+      osc.frequency.setValueAtTime(p.f1, now);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(50,p.f2), now + p.dur);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(p.g, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + p.dur);
+      osc.start(now);
+      osc.stop(now + p.dur + 0.02);
+    }catch(e){}
+  }
+
+  function revealClassFor(action){
+    if(['瓦斯','A卡','伏虎','六脉','降龙'].includes(action)) return 'focus-reveal';
+    if(['嘎波','A分','伏分','六散','降分'].includes(action)) return 'scatter-reveal';
+    if(['中防','逃跑','吸收'].includes(action)) return 'guard-reveal';
+    if(['反弹','镜面'].includes(action)) return 'reflect-reveal';
+    return 'utility-reveal';
+  }
+
+  function applyRevealVisual(playerAction, enemyAction){
+    const p = el('revealPlayer')?.closest('.slot');
+    const o = el('revealEnemy')?.closest('.slot');
+    [p,o].forEach(node => {
+      if(!node) return;
+      node.classList.remove('focus-reveal','scatter-reveal','guard-reveal','reflect-reveal','utility-reveal');
+    });
+    if(p) p.classList.add(revealClassFor(playerAction));
+    if(o) o.classList.add(revealClassFor(enemyAction));
+  }
+
+  function clearRevealVisual(){
+    const p = el('revealPlayer')?.closest('.slot');
+    const o = el('revealEnemy')?.closest('.slot');
+    [p,o].forEach(node => {
+      if(!node) return;
+      node.classList.remove('focus-reveal','scatter-reveal','guard-reveal','reflect-reveal','utility-reveal');
+    });
+  }
+
+  function updateUI(){
+    el('roundText').textContent = `第 ${state.round} 回合`;
+    el('playerHpText').textContent = `${state.player.hp} / ${INIT_HP}`;
+    el('enemyHpText').textContent = `${state.enemy.hp} / ${INIT_HP}`;
+    el('playerQiText').textContent = state.player.qi;
+    el('enemyQiText').textContent = state.enemy.qi;
+    el('playerHpBar').style.width = `${Math.max(0, state.player.hp)}%`;
+    el('enemyHpBar').style.width = `${Math.max(0, state.enemy.hp)}%`;
+    el('playerQiBar').style.width = `${Math.min(state.player.qi, 6) / 6 * 100}%`;
+    el('enemyQiBar').style.width = `${Math.min(state.enemy.qi, 6) / 6 * 100}%`;
+    el('playerSelected').textContent = state.selectedMove || '—';
+    el('enemyLast').textContent = state.enemy.lastMove || '—';
+    el('enemyStyle').textContent = `${state.enemyStyle} · ${styleTier(state.enemyStyle)}`; updateStageUI();
+    el('playerComboBadges').innerHTML = comboBadges(state.pState);
+    el('enemyComboBadges').innerHTML = comboBadges(state.oState);
+    updateStanceLamp('playerStanceLamp', state.pState);
+    updateStanceLamp('enemyStanceLamp', state.oState);
+
+    const intent = enemyIntent();
+    el('enemyIntent').textContent = intent.title;
+    el('enemyIntentDesc').textContent = intent.desc;
+
+    if(!state.revealLocked){
+      el('revealPlayer').textContent = state.selectedMove || '？';
+      el('revealPlayerDesc').textContent = state.selectedMove ? (MOVE_META[state.selectedMove]?.desc || '') : '先选一个动作';
+      el('revealEnemy').textContent = '？';
+      el('revealEnemyDesc').textContent = '等待揭晓';
+      clearRevealVisual();
+    }
+
+    renderMoves();
+    renderLog();
+    renderSituation();
+    el('confirmBtn').disabled = !state.selectedMove || state.gameOver || state.revealLocked;
+  }
+
+  
+function renderMoves(){
+    const attackRoot = el('attackGrid');
+    const defenseRoot = el('defenseGrid');
+    if(!attackRoot || !defenseRoot) return;
+    attackRoot.innerHTML = '';
+    defenseRoot.innerHTML = '';
+
+    let menu = BASE_ACTIONS.slice();
+    const [canLiu, jiangLeft, moriLeft] = state.pState;
+    if(canLiu && state.player.qi >= 1) menu = menu.concat(['六脉','六散']);
+    if(jiangLeft > 0) menu = menu.concat(['降龙','降分']);
+    if(moriLeft > 0) menu.push('末日');
+
+    const legal = getLegalActions(state.player.hp, state.player.qi, state.pState, true);
+    const recommended = recommendedGroups();
+
+    const attackGroups = [
+      ['基础进攻', ['运气','夺气','瓦斯','嘎波']],
+      ['二阶进攻', ['A卡','A分','色诱']],
+      ['三阶进攻', ['伏虎','伏分','天眼']],
+      ['中防连招', ['降龙','降分','末日']]
+    ];
+
+    const defenseNames = ['中防','逃跑','吸收','反弹','掐','镜面'].filter(n => menu.includes(n) || legal.includes(n));
+    const liuNames = ['六脉','六散'].filter(n => menu.includes(n) || legal.includes(n));
+
+    function buildBtn(name){
+      const btn = document.createElement('button');
+      btn.className = 'move-btn' + (state.selectedMove === name ? ' selected' : '');
+      const cost = ACT[name]?.qi || 0;
+      btn.disabled = !legal.includes(name) || state.gameOver || state.revealLocked;
+      const tags = MOVE_META[name]?.tags || [];
+      btn.innerHTML = `
+        <div class="cost">${cost ? cost + '气' : '0气'}</div>
+        <div class="move-name">${name}</div>
+        <div class="chips">${tags.map(t => `<span class="chip">${t}</span>`).join('')}</div>
+        <div class="move-desc">${MOVE_META[name]?.desc || ''}</div>
+      `;
+      btn.onclick = () => { state.selectedMove = name; updateUI(); };
+      return btn;
+    }
+
+    const liuQuick = el('liuQuick');
+    const comboCorner = el('comboCorner');
+    if(liuQuick){
+      liuQuick.innerHTML = '';
+      liuQuick.classList.remove('ready');
+      const quickMoves = [];
+      liuNames.forEach(name => quickMoves.push({name, kind:'starter'}));
+      if(jiangLeft > 0){
+        ['降龙','降分'].forEach(name => {
+          if(legal.includes(name) || menu.includes(name)) quickMoves.push({name, kind:'combo'});
+        });
+      }
+      if(moriLeft > 0 && (legal.includes('末日') || menu.includes('末日'))){
+        quickMoves.push({name:'末日', kind:'finisher'});
+      }
+      liuQuick.classList.toggle('ready', quickMoves.length > 0);
+      quickMoves.forEach(({name, kind}) => {
+        const btn = document.createElement('button');
+        btn.className = 'mini-move-btn ' + kind + (state.selectedMove === name ? ' selected' : '');
+        btn.disabled = !legal.includes(name) || state.gameOver || state.revealLocked;
+        btn.textContent = name;
+        btn.onclick = () => { state.selectedMove = name; updateUI(); };
+        liuQuick.appendChild(btn);
+      });
+      if(!quickMoves.length){
+        const ghost = document.createElement('span');
+        ghost.className = 'mini-ghost';
+        ghost.textContent = '起势后显示';
+        liuQuick.appendChild(ghost);
+      }
+    }
+    if(comboCorner){
+      comboCorner.classList.remove('starter-active','chain-active','finisher-active');
+      if(jiangLeft > 0){
+        comboCorner.innerHTML = '连招推进中：<br>降龙 / 降分剩余 <b>' + jiangLeft + '</b> 发';
+        comboCorner.classList.add('chain-active');
+      }else if(moriLeft > 0){
+        comboCorner.innerHTML = '终结窗口：<br><b>末日</b> 已待命';
+        comboCorner.classList.add('finisher-active');
+      }else if(canLiu){
+        comboCorner.innerHTML = '连招启动：<br><b>六脉 / 六散</b> 可直接使用';
+        comboCorner.classList.add('starter-active');
+      }else{
+        comboCorner.innerHTML = '中防起势后：<br>六脉 / 六散 → 降龙 / 降分 ×3 → 末日';
+      }
+    }
+
+    attackGroups.forEach(([title, names]) => {
+      const showNames = names.filter(n => menu.includes(n) || legal.includes(n));
+      if(!showNames.length) return;
+      const section = document.createElement('div');
+      section.className = 'attack-row' + (recommended.has(title === '基础进攻' ? '基础层' : title) ? ' recommended' : '');
+
+      const head = document.createElement('div');
+      head.className = 'attack-row-head';
+      const label = document.createElement('div');
+      label.textContent = title;
+      head.appendChild(label);
+
+      const hintMap = {
+        '基础进攻':'先争资源与方向',
+        '二阶进攻':'2气开始出现压阶',
+        '三阶进攻':'高压威胁',
+        '中防连招':'起势层'
+      };
+      const hint = document.createElement('div');
+      hint.className = 'group-hint';
+      hint.textContent = hintMap[title] || '';
+      head.appendChild(hint);
+
+      const grid = document.createElement('div');
+      grid.className = 'attack-grid';
+      showNames.forEach(name => grid.appendChild(buildBtn(name)));
+
+      section.appendChild(head);
+      section.appendChild(grid);
+      attackRoot.appendChild(section);
+    });
+
+    defenseNames.forEach(name => defenseRoot.appendChild(buildBtn(name)));
+  }
+
+
+  function showResult(title, desc, good=false){
+    const banner = el('resultBanner');
+    banner.classList.add('show');
+    el('resultBig').textContent = title;
+    el('resultSmall').textContent = desc;
+    banner.style.borderColor = good ? '#b7ead8' : '#fecaca';
+    banner.style.background = good ? '#f0fdf7' : '#fef2f2';
+    const btn = el('resultActionBtn');
+    if(!btn) return;
+    if(good){
+      if(state.stageIndex < CAMPAIGN_STAGES.length - 1){
+        btn.textContent = '进入下一关';
+        btn.onclick = gotoNextStage;
+      }else{
+        btn.textContent = '重新开始闯关';
+        btn.onclick = () => startStage(0);
+      }
+    }else{
+      btn.textContent = '重试本关';
+      btn.onclick = () => startStage(state.stageIndex);
+    }
+  }
+  function hideResult(){
+    const banner = el('resultBanner');
+    banner.classList.remove('show');
+    banner.style.borderColor = '';
+    banner.style.background = '';
+  }
+
+  function applyAndAdvance(actionP, actionO, result, qiBefore){
+    const tookDamageFromAttack = (result.pLose || result.dmgP > 0) && ALL_ATTACKS.includes(actionO);
+    const enemyTookDamageFromAttack = (result.oLose || result.dmgO > 0) && ALL_ATTACKS.includes(actionP);
+    const oldPlayerHp = state.player.hp;
+    const oldEnemyHp = state.enemy.hp;
+    const oldPlayerQi = state.player.qi;
+    const oldEnemyQi = state.enemy.qi;
+    const oldPState = state.pState.slice();
+    const oldOState = state.oState.slice();
+
+    state.player.hp -= result.dmgP;
+    state.enemy.hp -= result.dmgO;
+    state.player.qi += result.qiP;
+    state.enemy.qi += result.qiO;
+    if(result.pLose) state.player.hp = 0;
+    if(result.oLose) state.enemy.hp = 0;
+    state.player.hp = Math.max(0, state.player.hp);
+    state.enemy.hp = Math.max(0, state.enemy.hp);
+    state.player.qi = Math.max(0, state.player.qi);
+    state.enemy.qi = Math.max(0, state.enemy.qi);
+
+    state.pState = applyComboAfterTurn(actionP, state.pState, qiBefore, tookDamageFromAttack);
+    state.oState = applyComboAfterTurn(actionO, state.oState, state.enemyQiBefore, enemyTookDamageFromAttack);
+    state.enemy.lastMove = actionO;
+
+    if(state.player.hp < oldPlayerHp){ triggerFlash('playerCard','damage'); playSfx('hit'); }
+    else if(state.player.qi > oldPlayerQi){ triggerFlash('playerCard','gain'); playSfx('gain'); }
+    if(state.enemy.hp < oldEnemyHp){ triggerFlash('enemyCard','damage'); playSfx('hit'); }
+    else if(state.enemy.qi > oldEnemyQi){ triggerFlash('enemyCard','gain'); playSfx('gain'); }
+
+    if(JSON.stringify(oldPState)!==JSON.stringify(state.pState)){ triggerFlash('playerCard','combo'); playSfx('stance'); }
+    if(JSON.stringify(oldOState)!==JSON.stringify(state.oState)){ triggerFlash('enemyCard','combo'); playSfx('stance'); }
+
+    pushHistory(actionP, actionO, result);
+
+    if(result.pLose){
+      pushLog(`第${state.round}回合 你 ${actionP} vs 对手 ${actionO} → 你败北`, 'bad');
+      state.gameOver = true;
+      showResult('你败北', '先看清是哪条克制链在工作，再决定要不要重开。', false);
+      state.revealLocked = false;
+      updateUI();
+      return;
+    }
+    if(result.oLose){
+      pushLog(`第${state.round}回合 你 ${actionP} vs 对手 ${actionO} → 对手败北`, 'good');
+      state.gameOver = true;
+      showResult('你胜利', '这局已经能说明：完整规则骨架下，读招不只是猜拳。', true);
+      state.revealLocked = false;
+      updateUI();
+      return;
+    }
+
+    const logKind = result.dmgO > result.dmgP || result.qiP > result.qiO ? 'good' : result.dmgP > result.dmgO || result.qiO > result.qiP ? 'bad' : 'warn';
+    pushLog(`第${state.round}回合 你 ${actionP} vs 对手 ${actionO}。`, logKind);
+
+    state.round += 1;
+    state.selectedMove = null;
+    state.pendingEnemyMove = null;
+    state.revealLocked = false;
+    updateUI();
+  }
+
+  function doTurn(){
+    if(state.gameOver || !state.selectedMove) return;
+    const actionP = state.selectedMove;
+    const legalO = getLegalActions(state.enemy.hp, state.enemy.qi, state.oState, false);
+    const actionO = aiChoose(legalO, state.enemy.qi, state.round, state.enemyStyle, state.oState, state.player.qi, state.enemy.lastMove);
+    const qiBefore = state.player.qi;
+    state.enemyQiBefore = state.enemy.qi;
+    state.player.qi -= ACT[actionP]?.qi || 0;
+    state.enemy.qi -= ACT[actionO]?.qi || 0;
+    state.revealLocked = true;
+    state.pendingEnemyMove = actionO;
+    el('revealPlayer').textContent = actionP;
+    el('revealEnemy').textContent = actionO;
+    el('revealPlayerDesc').textContent = MOVE_META[actionP]?.desc || '';
+    el('revealEnemyDesc').textContent = MOVE_META[actionO]?.desc || '';
+    applyRevealVisual(actionP, actionO);
+    setVerdict('亮招完成', `你出 ${actionP}，对手出 ${actionO}。先别看日志，等中央判词。`);
+    updateUI();
+
+    const result = resolve(actionP, actionO);
+    setTimeout(() => {
+      const preMsg = [];
+      if (result.pLose) preMsg.push('你这手被直接判败。');
+      if (result.oLose) preMsg.push('对手这手被直接判败。');
+      if (!result.pLose && !result.oLose && (result.dmgP || result.dmgO || result.qiP || result.qiO)) {
+        preMsg.push('结算开始。');
+      }
+      const nextPStatePreview = applyComboAfterTurn(actionP, state.pState.slice(), qiBefore, (result.pLose || result.dmgP > 0) && ALL_ATTACKS.includes(actionO));
+      const nextOStatePreview = applyComboAfterTurn(actionO, state.oState.slice(), state.enemyQiBefore, (result.oLose || result.dmgO > 0) && ALL_ATTACKS.includes(actionP));
+      const [jt, jd] = getJudgement(actionP, actionO, result, nextPStatePreview, nextOStatePreview);
+      setVerdict(jt, jd);
+      if (preMsg.length) pushLog(preMsg.join(' '), result.oLose || result.dmgO > result.dmgP ? 'good' : result.pLose || result.dmgP > result.dmgO ? 'bad' : 'warn');
+      setTimeout(() => applyAndAdvance(actionP, actionO, result, qiBefore), 1500);
+    }, 900);
+  }
+
+  function updateStageUI(){
+    const stage = CAMPAIGN_STAGES[state.stageIndex] || CAMPAIGN_STAGES[0];
+    const titleNode = el('stageTitleText');
+    const teachNode = el('stageTeachText');
+    const lessonNode = el('stageLessonBox');
+    const hintNode = el('stageHintBox');
+    const enemyNameNode = el('enemyNameLabel');
+    const enemyRoleNode = el('enemyRoleLabel');
+    const progressNode = el('campaignProgress');
+    const goalNode = el('campaignGoal');
+    if(titleNode) titleNode.textContent = stage.title;
+    if(teachNode) teachNode.textContent = stage.teach;
+    if(lessonNode) lessonNode.textContent = stage.lesson;
+    if(hintNode) hintNode.textContent = `${stage.hint} ${stage.goal}`;
+    if(enemyNameNode) enemyNameNode.textContent = stage.enemyName;
+    if(enemyRoleNode) enemyRoleNode.textContent = stage.enemyRole;
+    if(progressNode) progressNode.textContent = `第 ${stage.id} / ${CAMPAIGN_STAGES.length} 关`;
+    if(goalNode) goalNode.textContent = stage.goal;
+  }
+
+  function startStage(index){
+    state = createState();
+    state.stageIndex = Math.max(0, Math.min(index, CAMPAIGN_STAGES.length - 1));
+    assignEnemyStyle(true);
+    hideResult();
+    const stage = CAMPAIGN_STAGES[state.stageIndex];
+    pushLog(`${stage.title}｜${stage.teach}`, 'warn');
+    pushLog(stage.lesson, 'normal');
+    pushLog(stage.goal, 'good');
+    pushLog(`本关敌方风格：${state.enemyStyle}。`, 'normal');
+    pushLog('首回合暂定不允许夺气。', 'normal');
+    setVerdict('本关开始', stage.hint);
+    updateUI();
+  }
+
+  function gotoNextStage(){
+    if(state.stageIndex < CAMPAIGN_STAGES.length - 1){
+      startStage(state.stageIndex + 1);
+    }else{
+      state = createState();
+      state.stageIndex = CAMPAIGN_STAGES.length - 1;
+      assignEnemyStyle(true);
+      hideResult();
+      pushLog('你已经通关当前 6 关教学闯关。可以继续重玩，观察不同对局感觉。', 'good');
+      setVerdict('闯关完成', '你已经打完整条教学链。现在可以重开闯关，或回到练习场继续挑 AI 对打。');
+      updateUI();
+    }
+  }
+
+
+  function openModal(id){ const n = el(id); if(n) n.classList.add('show'); }
+  function closeModal(id){ const n = el(id); if(n) n.classList.remove('show'); }
+
+  function buildStageSelect(){
+    const root = el('stageSelectGrid');
+    if(!root) return;
+    root.innerHTML = '';
+    CAMPAIGN_STAGES.forEach((stage, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'stage-btn';
+      btn.innerHTML = `<b>${stage.title}</b><div style="font-size:12px;color:var(--muted)">${stage.teach}</div>`;
+      btn.onclick = () => { closeModal('stageModal'); startStage(idx); };
+      root.appendChild(btn);
+    });
+  }
+
+  function init(){
+    startStage(0);
+  }
+
+  if(el('confirmBtn')) el('confirmBtn').onclick = doTurn;
+  if(el('resetBtn')) el('resetBtn').onclick = () => startStage(0);
+  if(el('restartStageBtn')) el('restartStageBtn').onclick = () => startStage(state.stageIndex);
+  if(el('stageSelectBtn')) el('stageSelectBtn').onclick = () => openModal('stageModal');
+  if(el('chartBtn')) el('chartBtn').onclick = () => openModal('chartModal');
+  if(el('guideBtn')) el('guideBtn').onclick = () => openModal('guideModal');
+  if(el('closeStageModalBtn')) el('closeStageModalBtn').onclick = () => closeModal('stageModal');
+  if(el('closeChartModalBtn')) el('closeChartModalBtn').onclick = () => closeModal('chartModal');
+  if(el('closeGuideModalBtn')) el('closeGuideModalBtn').onclick = () => closeModal('guideModal');
+  if(el('stageModal')) el('stageModal').onclick = (e) => { if(e.target.id === 'stageModal') closeModal('stageModal'); };
+  if(el('chartModal')) el('chartModal').onclick = (e) => { if(e.target.id === 'chartModal') closeModal('chartModal'); };
+  if(el('guideModal')) el('guideModal').onclick = (e) => { if(e.target.id === 'guideModal') closeModal('guideModal'); };
+
+  if(el('ruleBtn')) el('ruleBtn').onclick = () => {
+    alert(`当前 A4 AI 归档版摘要\n\n1. 保留完整骨架，并接入 D1 / D2 / 色诱终结型等最新 AI 风格。\n2. 首回合暂定不允许夺气。\n3. 分散克集中：嘎波/A分/伏分/六散/降分 对 瓦斯/A卡/伏虎/六脉/降龙。\n4. 中防只负责防住一二阶集中并作为起势入口；逃跑针对分散；吸收处理分散并获气；反弹才有反弹效果。\n5. 掐专抓色诱；色诱是 2 气终结路线，会对低阶与保守动作形成高压。\n6. 中防后且回合开始前有真实气，可接六脉/六散→降龙/降分×3→末日。\n7. 镜面主要针对天眼。\n\n这一版主要用于：按固定顺序闯关，一边打，一边学会资源、方向、防反、终结与起势。`);
+  };
+
+  buildStageSelect();
+  init();
+})();
+</script>
+</body>
+</html>
