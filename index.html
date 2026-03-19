@@ -4,6 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>术校冠冕｜同步亮招策略对决</title>
+  <script>
+    (function () {
+      "use strict";
+      function applyMobileMode() {
+        var isMobile = window.innerWidth < 768;
+        if (document && document.body) {
+          document.body.classList.toggle("mobile-mode", isMobile);
+        }
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyMobileMode, { once: true });
+      } else {
+        applyMobileMode();
+      }
+      window.addEventListener("resize", applyMobileMode, { passive: true });
+    })();
+  </script>
   <style>
     :root{
       --bg:#f7f7f8;
@@ -184,6 +201,105 @@
       .footer{flex-direction:column;align-items:stretch}
     }
     @media (max-width: 760px){.move-grid{grid-template-columns:repeat(2,1fr)}}
+
+    /* =========================================================
+       mobile-mode layout (ONLY when JS adds body.mobile-mode)
+       Requirements:
+       - Hide badges / top descriptions / situation panel / battle log
+       - Single-column vertical flow:
+         ① status bars ② VS reveal ③ move buttons ④ confirm button (fixed bottom)
+       - Buttons 2 per row, larger, easier tapping
+       - CSS only, no JS changes
+       ========================================================= */
+    body.mobile-mode{overflow:auto}
+    body.mobile-mode .app{
+      height:auto;
+      min-height:100vh;
+      padding:10px 10px 76px; /* room for fixed confirm button */
+      gap:10px;
+      max-width: 980px;
+    }
+
+    /* Hide: all badges + top description text + situation panel + battle log */
+    body.mobile-mode .badges{display:none !important;}
+    body.mobile-mode .sub{display:none !important;}
+    body.mobile-mode .entry-tip{display:none !important;}
+    body.mobile-mode #situationPanel{display:none !important;}
+    body.mobile-mode #battleLog{display:none !important;}
+
+    /* Keep topbar compact (title only) */
+    body.mobile-mode .topbar{padding:10px 12px; align-items:center;}
+    body.mobile-mode .title{font-size:16px;}
+
+    /* ① Status strip (player + enemy) then ② VS reveal */
+    body.mobile-mode .status-row{
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "player enemy"
+        "reveal reveal";
+      gap:10px;
+      min-height:auto;
+    }
+    body.mobile-mode #playerCard{grid-area:player;}
+    body.mobile-mode #enemyCard{grid-area:enemy;}
+    body.mobile-mode .reveal{grid-area:reveal;}
+
+    /* Make fighter cards compact */
+    body.mobile-mode .fighter{padding:10px; gap:8px;}
+    body.mobile-mode .glyph-stack{display:none;}
+    body.mobile-mode .glyph{width:54px;height:54px;border-radius:14px;font-size:14px;}
+    body.mobile-mode .stat-top{font-size:12px;}
+    body.mobile-mode .mini{font-size:12px; line-height:1.5;}
+    body.mobile-mode .stance-wrap{gap:8px;}
+
+    /* ③ Moves: single column; hide side column entirely */
+    body.mobile-mode .main{grid-template-columns:1fr; gap:10px;}
+    body.mobile-mode .side{display:none !important;}
+
+    /* Toolbar: hide everything except confirm button */
+    body.mobile-mode .action-toolbar .toolbar-right{display:none !important;}
+    body.mobile-mode #resetBtn{display:none !important;}
+    body.mobile-mode #stageSelectBtn{display:none !important;}
+    body.mobile-mode #restartStageBtn{display:none !important;}
+    body.mobile-mode #chartBtn{display:none !important;}
+    body.mobile-mode #guideBtn{display:none !important;}
+    body.mobile-mode #ruleBtn{display:none !important;}
+    body.mobile-mode .section-title{display:none !important;}
+
+    /* Buttons: 2 per row */
+    body.mobile-mode .action-layout{grid-template-columns:1fr; gap:10px;}
+    body.mobile-mode .attack-grid{grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px;}
+    body.mobile-mode .defense-grid{grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; max-height:none;}
+    body.mobile-mode .attack-rows{max-height:none;}
+
+    /* Card size + font for touch */
+    body.mobile-mode .move-btn{min-height:64px;}
+    body.mobile-mode .move-name{font-size:16px;}
+    body.mobile-mode .move-desc{font-size:11px; -webkit-line-clamp:2;}
+
+    /* ④ Confirm button fixed bottom */
+    body.mobile-mode #confirmBtn{
+      position:fixed;
+      left:0; right:0; bottom:0;
+      width:100%;
+      height:56px;
+      border-radius:0;
+      z-index:1000;
+      font-size:16px;
+      box-shadow:0 -10px 25px rgba(15,23,42,.12);
+    }
+    body.mobile-mode .action-toolbar{
+      position:static;
+      padding:0;
+      border:none;
+      background:transparent;
+      box-shadow:none;
+    }
+    body.mobile-mode .action-toolbar .toolbar-left{
+      width:100%;
+      justify-content:center;
+      padding:0;
+    }
   
     .modal{position:fixed;inset:0;background:rgba(17,24,39,.28);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
     .modal.show{display:flex}
