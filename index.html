@@ -320,7 +320,7 @@
     }
     body.mobile-mode .action-toolbar .toolbar-left{
       width:100%;
-      justify-content:center;
+      justify-content:space-between;
       padding:0;
     }
 
@@ -411,6 +411,43 @@
       border-radius:12px;
       font-size:14px;
       font-weight:800;
+    }
+
+    /* Mobile-only: attack/defense menus */
+    #attackMenuBtn{display:none}
+    #defenseMenuBtn{display:none}
+    body.mobile-mode #attackMenuBtn,
+    body.mobile-mode #defenseMenuBtn{
+      display:block;
+      border-radius:12px;
+      font-size:14px;
+      padding:10px 12px;
+      min-height:44px;
+      margin:0;
+    }
+
+    .attack-defense-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1003;}
+    body.mobile-mode.attack-menu-open #attackMenuOverlay{display:block;}
+    body.mobile-mode.defense-menu-open #defenseMenuOverlay{display:block;}
+
+    .attack-defense-sheet{
+      position:absolute;
+      left:12px; right:12px;
+      top:92px; bottom:76px; /* leave room for confirmBtn */
+      background:#fff;
+      border:1px solid rgba(0,0,0,.12);
+      border-radius:16px;
+      box-shadow:0 20px 50px rgba(0,0,0,.35);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+    body.mobile-mode.attack-menu-open #attackMenuList,
+    body.mobile-mode.defense-menu-open #defenseMenuList{
+      flex:1;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom:8px;
     }
   
     .modal{position:fixed;inset:0;background:rgba(17,24,39,.28);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
@@ -583,7 +620,9 @@
       <div class="action-toolbar">
         <div class="toolbar-left">
           <button class="btn primary" id="confirmBtn" disabled>确认亮招</button>
+          <button class="btn secondary" id="attackMenuBtn" type="button">进攻</button>
           <button class="btn secondary" id="mobileMenuBtn" type="button">菜单</button>
+          <button class="btn secondary" id="defenseMenuBtn" type="button">防御</button>
           <button class="btn secondary" id="resetBtn">重开原型</button>
           <button class="btn secondary" id="stageSelectBtn">选关</button>
         </div>
@@ -613,6 +652,26 @@
             <button class="btn secondary mobile-menu-action" type="button" id="menuGuideBtn">教学说明</button>
             <button class="btn secondary mobile-menu-action" type="button" id="menuRuleBtn">招式关系</button>
           </div>
+        </div>
+      </div>
+
+      <div id="attackMenuOverlay" class="attack-defense-overlay" aria-hidden="true">
+        <div class="attack-defense-sheet" role="dialog" aria-modal="true">
+          <div class="mobile-menu-head">
+            <div class="mobile-menu-title">进攻菜单</div>
+            <button class="btn secondary small-btn mobile-menu-close" type="button" id="attackMenuCloseBtn">关闭</button>
+          </div>
+          <div id="attackMenuList" class="mobile-menu-actions"></div>
+        </div>
+      </div>
+
+      <div id="defenseMenuOverlay" class="attack-defense-overlay" aria-hidden="true">
+        <div class="attack-defense-sheet" role="dialog" aria-modal="true">
+          <div class="mobile-menu-head">
+            <div class="mobile-menu-title">防御菜单</div>
+            <button class="btn secondary small-btn mobile-menu-close" type="button" id="defenseMenuCloseBtn">关闭</button>
+          </div>
+          <div id="defenseMenuList" class="mobile-menu-actions"></div>
         </div>
       </div>
 <div id="stageLessonBox" style="display:none"></div><div id="stageHintBox" style="display:none"></div>
@@ -1845,6 +1904,41 @@ function renderMoves(){
 <script>
   (function () {
     "use strict";
+    window.__buildMoveMenu = function buildMoveMenu(listRootId, gridRootId) {
+      var listRoot = document.getElementById(listRootId);
+      var gridRoot = document.getElementById(gridRootId);
+      if (!listRoot || !gridRoot) return;
+      listRoot.innerHTML = "";
+
+      // move-btn created by original JS; we mirror them as simple overlay buttons
+      var moveBtns = Array.prototype.slice.call(gridRoot.querySelectorAll("button.move-btn"));
+      moveBtns.forEach(function (btn) {
+        var actionName = "";
+        var nameEl = btn.querySelector(".move-name");
+        if (nameEl) actionName = nameEl.textContent.trim();
+
+        // cost label is optional
+        var costEl = btn.querySelector(".cost");
+        var costText = costEl ? costEl.textContent.trim() : "";
+
+        var oBtn = document.createElement("button");
+        oBtn.type = "button";
+        oBtn.className = "btn secondary mobile-menu-action";
+        oBtn.textContent = actionName + (costText ? (" " + costText) : "");
+        oBtn.disabled = btn.disabled;
+
+        oBtn.addEventListener("click", function () {
+          if (btn.disabled) return;
+          // Trigger the original move selection handler
+          btn.click();
+          // close overlay
+          if (listRootId === "attackMenuList") document.body.classList.remove("attack-menu-open");
+          if (listRootId === "defenseMenuList") document.body.classList.remove("defense-menu-open");
+        });
+        listRoot.appendChild(oBtn);
+      });
+    };
+
     function initMobileMenu() {
       var btn = document.getElementById("mobileMenuBtn");
       var overlay = document.getElementById("mobileMenuOverlay");
@@ -1906,6 +2000,73 @@ function renderMoves(){
       document.addEventListener("DOMContentLoaded", initMobileMenu, { once: true });
     } else {
       initMobileMenu();
+    }
+  })();
+</script>
+<script>
+  (function () {
+    "use strict";
+    function initAttackDefenseMenus() {
+      var attackBtn = document.getElementById("attackMenuBtn");
+      var defenseBtn = document.getElementById("defenseMenuBtn");
+      var attackClose = document.getElementById("attackMenuCloseBtn");
+      var defenseClose = document.getElementById("defenseMenuCloseBtn");
+      var attackOverlay = document.getElementById("attackMenuOverlay");
+      var defenseOverlay = document.getElementById("defenseMenuOverlay");
+      if (!attackBtn || !defenseBtn || !attackClose || !defenseClose || !attackOverlay || !defenseOverlay) return;
+
+      function openAttack() {
+        document.body.classList.add("attack-menu-open");
+        document.body.classList.remove("defense-menu-open");
+        document.body.classList.remove("mobile-menu-open");
+        attackOverlay.setAttribute("aria-hidden", "false");
+        defenseOverlay.setAttribute("aria-hidden", "true");
+
+        // build from current DOM
+        window.__buildMoveMenu("attackMenuList", "attackGrid");
+      }
+      function openDefense() {
+        document.body.classList.add("defense-menu-open");
+        document.body.classList.remove("attack-menu-open");
+        document.body.classList.remove("mobile-menu-open");
+        defenseOverlay.setAttribute("aria-hidden", "false");
+        attackOverlay.setAttribute("aria-hidden", "true");
+        window.__buildMoveMenu("defenseMenuList", "defenseGrid");
+      }
+      function closeAll() {
+        document.body.classList.remove("attack-menu-open");
+        document.body.classList.remove("defense-menu-open");
+        attackOverlay.setAttribute("aria-hidden", "true");
+        defenseOverlay.setAttribute("aria-hidden", "true");
+      }
+
+      attackBtn.addEventListener("click", function () {
+        if (document.body.classList.contains("attack-menu-open")) closeAll();
+        else openAttack();
+      });
+      defenseBtn.addEventListener("click", function () {
+        if (document.body.classList.contains("defense-menu-open")) closeAll();
+        else openDefense();
+      });
+      attackClose.addEventListener("click", closeAll);
+      defenseClose.addEventListener("click", closeAll);
+
+      // If the main menu opens, close attack/defense
+      window.addEventListener("click", function (e) {
+        if (!document.body.classList.contains("mobile-mode")) return;
+        if (e.target === attackOverlay) closeAll();
+        if (e.target === defenseOverlay) closeAll();
+      });
+
+      window.addEventListener("resize", function () {
+        if (!document.body.classList.contains("mobile-mode")) closeAll();
+      }, { passive: true });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initAttackDefenseMenus, { once: true });
+    } else {
+      initAttackDefenseMenus();
     }
   })();
 </script>
