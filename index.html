@@ -8,7 +8,13 @@
     (function () {
       "use strict";
       function applyMobileMode() {
-        var isMobile = window.innerWidth < 768;
+        // Mobile UI should only trigger on touch-like devices.
+        // Otherwise desktop browsers with narrow widths may get stuck in mobile layout.
+        var isTouchDevice =
+          (navigator && navigator.maxTouchPoints > 0) ||
+          ("ontouchstart" in window) ||
+          (window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+        var isMobile = window.innerWidth < 768 && isTouchDevice;
         if (document && document.body) {
           document.body.classList.toggle("mobile-mode", isMobile);
         }
@@ -333,6 +339,8 @@
       border-radius:12px;
       font-size:13px;
       padding:10px 12px;
+      position:relative;
+      z-index:903; /* ensure it stays clickable above #situationPanel */
     }
 
     /* Default collapsed in mobile-mode */
@@ -368,13 +376,18 @@
     }
 
     body.mobile-mode .mobile-menu-overlay{display:none}
-    body.mobile-mode.mobile-menu-open .mobile-menu-overlay{display:block}
+    body.mobile-mode.mobile-menu-open .mobile-menu-overlay{
+      display:block;
+      pointer-events:auto;
+    }
 
     .mobile-menu-overlay{
       position:fixed;
       inset:0;
       background:rgba(0,0,0,.55);
       z-index:1002;
+      display:none;
+      pointer-events:none;
     }
     .mobile-menu-sheet{
       position:absolute;
@@ -418,12 +431,17 @@
     #defenseMenuBtn{display:none}
     body.mobile-mode #attackMenuBtn,
     body.mobile-mode #defenseMenuBtn{
-      display:block;
+      display:block !important;
       border-radius:12px;
       font-size:14px;
       padding:10px 12px;
       min-height:44px;
       margin:0;
+      white-space:nowrap;
+      min-width:72px;
+      visibility:visible !important;
+      opacity:1 !important;
+      z-index:1005;
     }
 
     .attack-defense-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1003;}
@@ -467,6 +485,7 @@
 
   
     /* --- A5 layout refinement: split attack / defense areas and compact full-page fit --- */
+    /* 与 original.html 一致：桌面端全局生效；mobile-mode 下由 body.mobile-mode 规则再覆盖 */
     .app{gap:10px;padding:10px;max-width:1320px}
     .topbar{padding:10px 12px}
     .title{font-size:18px}
