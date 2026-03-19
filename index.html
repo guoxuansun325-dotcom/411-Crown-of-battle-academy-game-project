@@ -300,6 +300,29 @@
       justify-content:center;
       padding:0;
     }
+
+    /* Mobile-only: battle details toggle button (above move area) */
+    #detailsToggleBtn{display:none}
+    body.mobile-mode #detailsToggleBtn{
+      display:block;
+      width:100%;
+      margin:10px 0 6px;
+      border-radius:12px;
+      font-size:13px;
+      padding:10px 12px;
+    }
+
+    /* Default collapsed in mobile-mode */
+    body.mobile-mode .intent{display:none !important;}
+    body.mobile-mode #playerComboBadges{display:none !important;}
+    body.mobile-mode #enemyComboBadges{display:none !important;}
+    body.mobile-mode #situationPanel{display:none !important;}
+
+    /* Expanded state */
+    body.mobile-mode.show-details .intent{display:block !important;}
+    body.mobile-mode.show-details #playerComboBadges{display:inline-flex !important;}
+    body.mobile-mode.show-details #enemyComboBadges{display:inline-flex !important;}
+    body.mobile-mode.show-details #situationPanel{display:block !important;}
   
     .modal{position:fixed;inset:0;background:rgba(17,24,39,.28);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
     .modal.show{display:flex}
@@ -485,6 +508,7 @@
           <button class="btn secondary" id="ruleBtn">招式关系</button>
         </div>
       </div>
+      <button class="btn secondary" id="detailsToggleBtn" type="button" aria-expanded="false">战况详情</button>
 <div id="stageLessonBox" style="display:none"></div><div id="stageHintBox" style="display:none"></div>
 
       <div class="action-layout">
@@ -1688,6 +1712,29 @@ function renderMoves(){
   buildStageSelect();
   init();
 })();
+</script>
+<script>
+  (function () {
+    "use strict";
+    function initDetailsToggle() {
+      var btn = document.getElementById("detailsToggleBtn");
+      if (!btn) return;
+      // Default collapsed
+      document.body.classList.remove("show-details");
+      btn.setAttribute("aria-expanded", "false");
+      btn.textContent = "战况详情";
+      btn.addEventListener("click", function () {
+        var on = document.body.classList.toggle("show-details");
+        btn.setAttribute("aria-expanded", on ? "true" : "false");
+        btn.textContent = on ? "收起详情" : "战况详情";
+      });
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initDetailsToggle, { once: true });
+    } else {
+      initDetailsToggle();
+    }
+  })();
 </script>
 </body>
 </html>
