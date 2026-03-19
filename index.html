@@ -211,14 +211,13 @@
        - Buttons 2 per row, larger, easier tapping
        - CSS only, no JS changes
        ========================================================= */
-    body.mobile-mode{overflow:hidden}
+    body.mobile-mode{overflow:auto}
     body.mobile-mode .app{
-      height:100vh;
+      height:auto;
       min-height:100vh;
       padding:10px 10px 76px; /* room for fixed confirm button */
       gap:10px;
       max-width: 980px;
-      overflow:hidden;
     }
 
     /* Hide: all badges + top description text + situation panel + battle log */
@@ -256,10 +255,7 @@
     /* ③ Moves: single column */
     body.mobile-mode .main{grid-template-columns:1fr; gap:10px;}
 
-    /*
-      Single-page: 用固定浮层承载“胜负结果/威胁面板”，避免页面滚动。
-      默认：隐藏 side 面板；当 .show-details 或 resultBanner.show 时再显示。
-    */
+    /* Side panels：默认不占用屏幕；只让胜负结算的 resultBanner 浮出显示 */
     body.mobile-mode .side{
       display:block !important;
       position:fixed;
@@ -276,19 +272,11 @@
       position:fixed;
       left:10px;
       right:10px;
-      top:120px;
+      bottom:64px; /* above confirmBtn (56px) */
+      top:auto;
       z-index:901;
-    }
-    body.mobile-mode.show-details #situationPanel{
-      display:block !important;
-      pointer-events:auto;
-      position:fixed;
-      left:10px;
-      right:10px;
-      top:120px;
-      bottom:76px;
       overflow:auto;
-      z-index:902;
+      max-height:calc(100vh - 140px);
     }
 
     /* Toolbar: hide everything except confirm button */
@@ -302,20 +290,7 @@
     body.mobile-mode .section-title{display:none !important;}
 
     /* Buttons: 2 per row */
-    body.mobile-mode .panel.moves{
-      display:flex;
-      flex-direction:column;
-      min-height:0;
-    }
-    body.mobile-mode .action-layout{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      flex:1;
-      overflow:auto;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom:6px;
-    }
+    body.mobile-mode .action-layout{grid-template-columns:1fr; gap:10px;}
     body.mobile-mode .attack-grid{grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px;}
     body.mobile-mode .defense-grid{grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; max-height:none;}
     body.mobile-mode .attack-rows{max-height:none;}
@@ -370,7 +345,73 @@
     body.mobile-mode.show-details .intent{display:block !important;}
     body.mobile-mode.show-details #playerComboBadges{display:inline-flex !important;}
     body.mobile-mode.show-details #enemyComboBadges{display:inline-flex !important;}
-    body.mobile-mode.show-details #situationPanel{display:block !important;}
+    body.mobile-mode.show-details #situationPanel{
+      display:block !important;
+      pointer-events:auto;
+      position:fixed;
+      left:10px; right:10px;
+      top:120px;
+      bottom:64px;
+      overflow:auto;
+      z-index:902;
+    }
+
+    /* Mobile-only: menu overlay */
+    #mobileMenuBtn{display:none}
+    body.mobile-mode #mobileMenuBtn{
+      display:block;
+      border-radius:12px;
+      font-size:14px;
+      padding:10px 12px;
+      min-height:44px;
+      margin:0 0 6px;
+    }
+
+    body.mobile-mode .mobile-menu-overlay{display:none}
+    body.mobile-mode.mobile-menu-open .mobile-menu-overlay{display:block}
+
+    .mobile-menu-overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.55);
+      z-index:1002;
+    }
+    .mobile-menu-sheet{
+      position:absolute;
+      left:12px;
+      right:12px;
+      top:92px; /* below top area */
+      background:#fff;
+      border:1px solid rgba(0,0,0,.12);
+      border-radius:16px;
+      box-shadow:0 20px 50px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .mobile-menu-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(0,0,0,.08);
+    }
+    .mobile-menu-title{
+      font-weight:900;
+      font-size:14px;
+    }
+    .mobile-menu-actions{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:8px;
+      padding:12px 14px 16px;
+    }
+    .mobile-menu-action{
+      width:100%;
+      text-align:center;
+      padding:12px 14px;
+      border-radius:12px;
+      font-size:14px;
+      font-weight:800;
+    }
   
     .modal{position:fixed;inset:0;background:rgba(17,24,39,.28);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
     .modal.show{display:flex}
@@ -542,6 +583,7 @@
       <div class="action-toolbar">
         <div class="toolbar-left">
           <button class="btn primary" id="confirmBtn" disabled>确认亮招</button>
+          <button class="btn secondary" id="mobileMenuBtn" type="button">菜单</button>
           <button class="btn secondary" id="resetBtn">重开原型</button>
           <button class="btn secondary" id="stageSelectBtn">选关</button>
         </div>
@@ -557,6 +599,22 @@
         </div>
       </div>
       <button class="btn secondary" id="detailsToggleBtn" type="button" aria-expanded="false">战况详情</button>
+      <div id="mobileMenuOverlay" class="mobile-menu-overlay" aria-hidden="true">
+        <div class="mobile-menu-sheet" role="dialog" aria-modal="true">
+          <div class="mobile-menu-head">
+            <div class="mobile-menu-title">战况操作</div>
+            <button class="btn secondary small-btn mobile-menu-close" type="button" id="mobileMenuCloseBtn">关闭</button>
+          </div>
+          <div class="mobile-menu-actions">
+            <button class="btn secondary mobile-menu-action" type="button" id="menuResetBtn">重开原型</button>
+            <button class="btn secondary mobile-menu-action" type="button" id="menuStageBtn">选关</button>
+            <button class="btn secondary mobile-menu-action" type="button" id="menuRestartBtn">重开本关</button>
+            <button class="btn secondary mobile-menu-action" type="button" id="menuChartBtn">招式图谱</button>
+            <button class="btn secondary mobile-menu-action" type="button" id="menuGuideBtn">教学说明</button>
+            <button class="btn secondary mobile-menu-action" type="button" id="menuRuleBtn">招式关系</button>
+          </div>
+        </div>
+      </div>
 <div id="stageLessonBox" style="display:none"></div><div id="stageHintBox" style="display:none"></div>
 
       <div class="action-layout">
@@ -1781,6 +1839,73 @@ function renderMoves(){
       document.addEventListener("DOMContentLoaded", initDetailsToggle, { once: true });
     } else {
       initDetailsToggle();
+    }
+  })();
+</script>
+<script>
+  (function () {
+    "use strict";
+    function initMobileMenu() {
+      var btn = document.getElementById("mobileMenuBtn");
+      var overlay = document.getElementById("mobileMenuOverlay");
+      var closeBtn = document.getElementById("mobileMenuCloseBtn");
+      if (!btn || !overlay) return;
+
+      function openMenu() {
+        document.body.classList.add("mobile-menu-open");
+        if (overlay) overlay.setAttribute("aria-hidden", "false");
+      }
+      function closeMenu() {
+        document.body.classList.remove("mobile-menu-open");
+        if (overlay) overlay.setAttribute("aria-hidden", "true");
+      }
+      function toggleMenu() {
+        if (document.body.classList.contains("mobile-menu-open")) closeMenu();
+        else openMenu();
+      }
+
+      btn.addEventListener("click", function () {
+        // Only meaningful in mobile-mode; harmless elsewhere.
+        toggleMenu();
+      });
+
+      if (closeBtn) {
+        closeBtn.addEventListener("click", function () {
+          closeMenu();
+        });
+      }
+      overlay.addEventListener("click", function (e) {
+        // Click outside sheet closes
+        if (e.target === overlay) closeMenu();
+      });
+
+      function wireMenuAction(menuBtnId, targetBtnId) {
+        var m = document.getElementById(menuBtnId);
+        if (!m) return;
+        m.addEventListener("click", function () {
+          var t = document.getElementById(targetBtnId);
+          if (t && typeof t.click === "function") t.click();
+          closeMenu();
+        });
+      }
+
+      wireMenuAction("menuResetBtn", "resetBtn");
+      wireMenuAction("menuStageBtn", "stageSelectBtn");
+      wireMenuAction("menuRestartBtn", "restartStageBtn");
+      wireMenuAction("menuChartBtn", "chartBtn");
+      wireMenuAction("menuGuideBtn", "guideBtn");
+      wireMenuAction("menuRuleBtn", "ruleBtn");
+
+      // If leaving mobile-mode, force close
+      window.addEventListener("resize", function () {
+        if (!document.body.classList.contains("mobile-mode")) closeMenu();
+      }, { passive: true });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initMobileMenu, { once: true });
+    } else {
+      initMobileMenu();
     }
   })();
 </script>
