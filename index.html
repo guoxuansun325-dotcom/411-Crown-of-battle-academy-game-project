@@ -211,13 +211,14 @@
        - Buttons 2 per row, larger, easier tapping
        - CSS only, no JS changes
        ========================================================= */
-    body.mobile-mode{overflow:auto}
+    body.mobile-mode{overflow:hidden}
     body.mobile-mode .app{
-      height:auto;
+      height:100vh;
       min-height:100vh;
       padding:10px 10px 76px; /* room for fixed confirm button */
       gap:10px;
       max-width: 980px;
+      overflow:hidden;
     }
 
     /* Hide: all badges + top description text + situation panel + battle log */
@@ -252,9 +253,43 @@
     body.mobile-mode .mini{font-size:12px; line-height:1.5;}
     body.mobile-mode .stance-wrap{gap:8px;}
 
-    /* ③ Moves: single column; hide side column entirely */
+    /* ③ Moves: single column */
     body.mobile-mode .main{grid-template-columns:1fr; gap:10px;}
-    body.mobile-mode .side{display:none !important;}
+
+    /*
+      Single-page: 用固定浮层承载“胜负结果/威胁面板”，避免页面滚动。
+      默认：隐藏 side 面板；当 .show-details 或 resultBanner.show 时再显示。
+    */
+    body.mobile-mode .side{
+      display:block !important;
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:900;
+      background:transparent;
+    }
+    body.mobile-mode .side > .panel{display:none !important;}
+    body.mobile-mode #resultBanner{display:none !important;}
+    body.mobile-mode #resultBanner.show{
+      display:block !important;
+      pointer-events:auto;
+      position:fixed;
+      left:10px;
+      right:10px;
+      top:120px;
+      z-index:901;
+    }
+    body.mobile-mode.show-details #situationPanel{
+      display:block !important;
+      pointer-events:auto;
+      position:fixed;
+      left:10px;
+      right:10px;
+      top:120px;
+      bottom:76px;
+      overflow:auto;
+      z-index:902;
+    }
 
     /* Toolbar: hide everything except confirm button */
     body.mobile-mode .action-toolbar .toolbar-right{display:none !important;}
@@ -267,7 +302,20 @@
     body.mobile-mode .section-title{display:none !important;}
 
     /* Buttons: 2 per row */
-    body.mobile-mode .action-layout{grid-template-columns:1fr; gap:10px;}
+    body.mobile-mode .panel.moves{
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    body.mobile-mode .action-layout{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      flex:1;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom:6px;
+    }
     body.mobile-mode .attack-grid{grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px;}
     body.mobile-mode .defense-grid{grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; max-height:none;}
     body.mobile-mode .attack-rows{max-height:none;}
